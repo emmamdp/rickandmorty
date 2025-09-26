@@ -19,5 +19,14 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Rick And Morty"
-include(":app")
+rootProject.name = "RickAndMorty"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+include(
+    ":app",
+    ":core:di",
+    ":core:navigation",
+    ":data",
+    ":domain",
+    ":features:splash"
+)
