@@ -26,6 +26,7 @@ include(
     ":app",
     ":core:di",
     ":core:navigation",
+    ":core:ui",
     ":data",
     ":domain",
     ":features:splash"

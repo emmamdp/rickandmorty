@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.emdp.rickandmorty.features.splash"
+    namespace = "com.emdp.rickandmorty.core.ui"
     compileSdk = 36
 
     defaultConfig {
@@ -28,21 +28,13 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.navigation)
-    implementation(projects.core.ui)
-
     implementation(platform(libs.androidx.compose.bom))
+
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.navigation.compose)
-
-    implementation(libs.koin.android)
-    implementation(libs.kotlinx.coroutines.android)
-
-    testImplementation(libs.junit4)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.kotlin)
 }
