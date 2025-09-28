@@ -7,7 +7,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.emdp.rickandmorty.navigation.RickAndMortyAppNavHost
-import com.emdp.rickandmorty.ui.theme.RickAndMortyTheme
+import com.emdp.rickandmorty.core.ui.theme.RickAndMortyTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

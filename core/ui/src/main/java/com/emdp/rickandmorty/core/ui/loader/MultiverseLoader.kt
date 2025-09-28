@@ -33,12 +33,12 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.emdp.rickandmorty.core.ui.R
+import com.emdp.rickandmorty.core.ui.theme.AppTextStyles
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,8 +102,8 @@ fun MultiverseLoader(
                     Spacer(modifier = Modifier.height(height = 14.dp))
                     Text(
                         text = loaderText,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
+                        style = AppTextStyles.TitleEmphasis,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                 }
