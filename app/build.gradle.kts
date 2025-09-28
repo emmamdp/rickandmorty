@@ -40,6 +40,7 @@ android {
 dependencies {
     implementation(projects.core.di)
     implementation(projects.core.navigation)
+    implementation(projects.core.ui)
     implementation(projects.features.splash)
 
     implementation(platform(libs.androidx.compose.bom))
