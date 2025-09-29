@@ -29,5 +29,6 @@ include(
     ":core:ui",
     ":data",
     ":domain",
-    ":features:splash"
+    ":features:splash",
+    ":features:characterslist"
 )
