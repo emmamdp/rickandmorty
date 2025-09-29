@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,7 +37,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.emdp.rickandmorty.core.ui.R
-import com.emdp.rickandmorty.core.ui.theme.AppTextStyles
+import com.emdp.rickandmorty.core.ui.text.AppTextStyles
+import com.emdp.rickandmorty.core.ui.theme.ContentOnLoader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,7 +103,7 @@ fun MultiverseLoader(
                     Text(
                         text = loaderText,
                         style = AppTextStyles.TitleEmphasis,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = ContentOnLoader,
                         textAlign = TextAlign.Center
                     )
                 }

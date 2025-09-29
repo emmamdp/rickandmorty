@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -14,15 +18,18 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun RickAndMortySplashScreen(onFinished: (() -> Unit)) {
+    var isLoading by rememberSaveable { mutableStateOf(true) }
+
     LaunchedEffect(Unit) {
         delay(1200)
+        isLoading = false
         onFinished()
     }
-    RickAndMortyIllustration()
+    RickAndMortyIllustration(isLoading)
 }
 
 @Composable
-fun RickAndMortyIllustration() {
+fun RickAndMortyIllustration(isLoading: Boolean) {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.splash_illustration),
@@ -30,6 +37,7 @@ fun RickAndMortyIllustration() {
             contentScale = ContentScale.Crop,
             modifier = Modifier.matchParentSize()
         )
-        MultiverseLoader()
+        if (isLoading)
+            MultiverseLoader()
     }
 }

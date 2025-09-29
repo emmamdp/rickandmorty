@@ -13,3 +13,5 @@ val Neutral10 = Color(0xFF1B1B1B)
 val Neutral0  = Color(0xFF000000)
 
 val ErrorRed = Color(0xFFEF5350)
+
+val ContentOnLoader = Neutral100

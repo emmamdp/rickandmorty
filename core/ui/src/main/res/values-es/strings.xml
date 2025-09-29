@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="loader_multiverse_desc">Cargando multiverso</string>
+    <string name="topbar_back">Atrás</string>
 </resources>
