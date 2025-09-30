@@ -9,7 +9,9 @@ kotlin {
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.junit4)
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
+    testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
 }
