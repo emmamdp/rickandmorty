@@ -11,6 +11,10 @@ android {
     defaultConfig {
         minSdk = 26
         consumerProguardFiles("consumer-rules.pro")
+
+        buildConfigField("Long", "CHAR_LIST_TTL_MS", "24L * 60L * 60L * 1000L")
+        buildConfigField("Long", "CHAR_DETAIL_TTL_MS", "72L * 60L * 60L * 1000L")
+        buildConfigField("Long", "EPISODES_TTL_MS", "7L * 24L * 60L * 60L * 1000L")
     }
 
     buildFeatures { buildConfig = true }
@@ -23,6 +27,11 @@ android {
     kotlin {
         jvmToolchain(17)
     }
+
+    testOptions {
+        unitTests { isReturnDefaultValues = true }
+        unitTests.all { it.useJUnitPlatform() }
+    }
 }
 
 dependencies {
@@ -32,7 +41,9 @@ dependencies {
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.converter.moshi)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -42,7 +53,11 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
-    testImplementation(libs.junit4)
+    implementation(libs.koin.core)
+
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
+    testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
 }

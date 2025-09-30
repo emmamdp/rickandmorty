@@ -42,7 +42,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
 
-    testImplementation(libs.junit4)
+    testImplementation(libs.junit.api)
+    testImplementation(libs.junit.params)
+    testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
 }
