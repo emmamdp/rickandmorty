@@ -32,13 +32,20 @@ android {
         unitTests { isReturnDefaultValues = true }
         unitTests.all { it.useJUnitPlatform() }
     }
+
+    sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+    arg("room.expandProjection", "true")
 }
 
 dependencies {
     implementation(projects.domain)
 
     implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.moshi)
@@ -47,11 +54,12 @@ dependencies {
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.room.paging)
     ksp(libs.room.compiler)
 
     implementation(libs.paging.runtime)
 
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.koin.core)
 
