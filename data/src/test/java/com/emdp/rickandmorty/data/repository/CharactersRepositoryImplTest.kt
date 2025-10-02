@@ -4,6 +4,7 @@ import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
+import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,7 +17,8 @@ import java.io.IOException
 
 internal class CharactersRepositoryImplTest {
 
-    private val remoteSource: CharactersRemoteSource = Mockito.mock(CharactersRemoteSource::class.java)
+    private val remoteSource: CharactersRemoteSource =
+        Mockito.mock(CharactersRemoteSource::class.java)
     private val repository = CharactersRepositoryImpl(remoteSource)
 
     @Test
@@ -27,7 +29,7 @@ internal class CharactersRepositoryImplTest {
         val species = "human"
         val type: String? = null
         val gender = "male"
-        val expectedList = CharacterModelMother.mockList()
+        val expectedList = CharactersPageModelMother.mock()
         val expected = DataResult.Success(expectedList)
 
         whenever(
@@ -47,7 +49,14 @@ internal class CharactersRepositoryImplTest {
         val expected = DataResult.Error(error = AppError.Network(IOException("timeout")))
 
         whenever(
-            remoteSource.getCharacters(page = null, name = null, status = null, species = null, type = null, gender = null)
+            remoteSource.getCharacters(
+                page = null,
+                name = null,
+                status = null,
+                species = null,
+                type = null,
+                gender = null
+            )
         ).thenReturn(expected)
 
         val result = repository.getCharacters(
@@ -57,7 +66,14 @@ internal class CharactersRepositoryImplTest {
         assertTrue(result is DataResult.Error)
         assertEquals(expected.error, (result as DataResult.Error).error)
         verify(remoteSource, times(1))
-            .getCharacters(page = null, name = null, status = null, species = null, type = null, gender = null)
+            .getCharacters(
+                page = null,
+                name = null,
+                status = null,
+                species = null,
+                type = null,
+                gender = null
+            )
     }
 
     @Test

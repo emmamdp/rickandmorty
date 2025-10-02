@@ -40,14 +40,18 @@ internal class CharactersRemoteMapperImplTest {
     }
 
     @Test
-    fun `toModel(response) maps list of results`() {
-        val list = mapper.toModel(response = CharactersResponseDtoMother.mock())
+    fun `toModel(response) maps pagination and results`() {
+        val page = mapper.toModel(response = CharactersResponseDtoMother.mock())
 
-        assertEquals(2, list.size)
-        assertEquals("Rick", list[0].name)
-        assertEquals("Morty", list[1].name)
-        assertEquals(CharacterStatus.ALIVE, list[0].status)
-        assertEquals(CharacterStatus.DEAD, list[1].status)
+        assertEquals(826, page.count)
+        assertEquals(42, page.pages)
+        assertEquals(3, page.nextPage)
+        assertEquals(1, page.prevPage)
+        assertEquals(2, page.results.size)
+        assertEquals("Rick", page.results[0].name)
+        assertEquals("Morty", page.results[1].name)
+        assertEquals(CharacterStatus.ALIVE, page.results[0].status)
+        assertEquals(CharacterStatus.DEAD, page.results[1].status)
     }
 
     @ParameterizedTest

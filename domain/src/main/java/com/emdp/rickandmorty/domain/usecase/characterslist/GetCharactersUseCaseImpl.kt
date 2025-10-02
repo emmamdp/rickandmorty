@@ -1,7 +1,7 @@
 package com.emdp.rickandmorty.domain.usecase.characterslist
 
 import com.emdp.rickandmorty.core.common.result.DataResult
-import com.emdp.rickandmorty.domain.models.CharacterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
 
 class GetCharactersUseCaseImpl(
@@ -10,7 +10,7 @@ class GetCharactersUseCaseImpl(
 
     override suspend fun invoke(
         params: GetCharactersUseCase.Params
-    ): DataResult<List<CharacterModel>> = repository.getCharacters(
+    ): DataResult<CharactersPageModel> = repository.getCharacters(
         page = params.page,
         name = params.name,
         status = params.status,

@@ -2,6 +2,7 @@ package com.emdp.rickandmorty.domain.repository
 
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.domain.models.CharacterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 
 interface CharactersRepository {
 
@@ -12,7 +13,7 @@ interface CharactersRepository {
         species: String? = null,
         type: String? = null,
         gender: String? = null
-    ): DataResult<List<CharacterModel>>
+    ): DataResult<CharactersPageModel>
 
     suspend fun getCharacterById(id: Int): DataResult<CharacterModel>
 }

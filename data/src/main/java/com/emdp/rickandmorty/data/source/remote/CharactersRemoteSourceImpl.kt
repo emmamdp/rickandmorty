@@ -4,6 +4,7 @@ import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.remote.api.CharactersApi
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
 import com.emdp.rickandmorty.domain.models.CharacterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 
 class CharactersRemoteSourceImpl(
     private val api: CharactersApi,
@@ -17,7 +18,7 @@ class CharactersRemoteSourceImpl(
         species: String?,
         type: String?,
         gender: String?
-    ): DataResult<List<CharacterModel>> = runCatching {
+    ): DataResult<CharactersPageModel> = runCatching {
         val response = api.getCharacters(page, name, status, species, type, gender)
         DataResult.Success(data = mapper.toModel(response))
     }.getOrElse { throwable ->

@@ -7,6 +7,7 @@ import com.emdp.rickandmorty.data.source.remote.dto.CharacterDtoMother
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDtoMother
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
+import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -33,7 +34,7 @@ internal class CharactersRemoteSourceImplTest {
     @Test
     fun `getCharacters returns Success and maps list`() = runTest {
         val response = CharactersResponseDtoMother.mock()
-        val model = CharacterModelMother.mockList()
+        val model = CharactersPageModelMother.mock()
 
         whenever(
             api.getCharacters(
@@ -58,7 +59,14 @@ internal class CharactersRemoteSourceImplTest {
 
         assertTrue(result is DataResult.Success)
         assertEquals(model, (result as DataResult.Success).data)
-        verify(api, times(1)).getCharacters(PAGE_1, NAME_RICK, STATUS_ALIVE, HUMAN, null, GENDER_MALE)
+        verify(api, times(1)).getCharacters(
+            PAGE_1,
+            NAME_RICK,
+            STATUS_ALIVE,
+            HUMAN,
+            null,
+            GENDER_MALE
+        )
         verify(mapper, times(1)).toModel(response)
     }
 
