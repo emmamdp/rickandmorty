@@ -15,6 +15,7 @@ import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.ALIVE
 import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.DEAD
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import retrofit2.HttpException
 import java.io.IOException
 import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.UNKNOWN as CHARACTER_STATUS_UNKNOWN
@@ -25,8 +26,8 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
         CharactersPageModel(
             count = response.info.count,
             pages = response.info.pages,
-            nextPage = response.info.next?.toInt(),
-            prevPage = response.info.prev?.toInt(),
+            nextPage = response.info.next.extractPageParam(),
+            prevPage = response.info.prev.extractPageParam(),
             results = response.results.map { dto -> toModel(dto) }
         )
 
@@ -74,11 +75,17 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
             else -> UNKNOWN
         }
 
+    private fun String?.extractPageParam(): Int? =
+        this?.toHttpUrlOrNull()
+            ?.queryParameter(PAGE)
+            ?.toIntOrNull()
+
     companion object {
         private const val STATUS_ALIVE = "alive"
         private const val STATUS_DEAD = "dead"
         private const val GENDER_FEMALE = "female"
         private const val GENDER_MALE = "male"
         private const val GENDER_GENDERLESS = "genderless"
+        private const val PAGE = "page"
     }
 }

@@ -45,7 +45,7 @@ internal class CharactersRemoteMapperImplTest {
 
         assertEquals(826, page.count)
         assertEquals(42, page.pages)
-        assertEquals(3, page.nextPage)
+        assertEquals(2, page.nextPage)
         assertEquals(1, page.prevPage)
         assertEquals(2, page.results.size)
         assertEquals("Rick", page.results[0].name)
