@@ -24,6 +24,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(
     ":app",
+    ":core:common",
     ":core:di",
     ":core:navigation",
     ":core:ui",

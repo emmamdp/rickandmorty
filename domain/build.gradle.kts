@@ -7,6 +7,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(projects.core.common)
+
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit.api)

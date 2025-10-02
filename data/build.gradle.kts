@@ -44,6 +44,7 @@ ksp {
 
 dependencies {
     implementation(projects.domain)
+    implementation(projects.core.common)
 
     implementation(libs.retrofit)
     implementation(libs.okhttp)
@@ -68,4 +69,5 @@ dependencies {
     testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
