@@ -2,7 +2,7 @@ package com.emdp.rickandmorty.domain.usecase.characterslist
 
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
-import com.emdp.rickandmorty.domain.models.CharacterModelMother
+import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,8 +27,8 @@ internal class GetCharactersUseCaseImplTest {
             type = null,
             gender = "male"
         )
-        val list = CharacterModelMother.mockList()
-        val expected = DataResult.Success(list)
+        val page = CharactersPageModelMother.mock()
+        val expected = DataResult.Success(page)
 
         whenever(
             repository.getCharacters(
@@ -44,7 +44,7 @@ internal class GetCharactersUseCaseImplTest {
         val result = useCase(params)
 
         assertTrue(result is DataResult.Success)
-        assertEquals(list, (result as DataResult.Success).data)
+        assertEquals(page, (result as DataResult.Success).data)
         verify(repository).getCharacters(
             page = params.page,
             name = params.name,

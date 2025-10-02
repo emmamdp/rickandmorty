@@ -4,6 +4,7 @@ import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.data.source.remote.dto.CharacterDto
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDto
 import com.emdp.rickandmorty.domain.models.CharacterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import com.emdp.rickandmorty.domain.models.enums.CharacterGender
 import com.emdp.rickandmorty.domain.models.enums.CharacterGender.FEMALE
 import com.emdp.rickandmorty.domain.models.enums.CharacterGender.GENDERLESS
@@ -20,8 +21,14 @@ import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.UNKNOWN as CHAR
 
 class CharactersRemoteMapperImpl : CharactersRemoteMapper {
 
-    override fun toModel(response: CharactersResponseDto): List<CharacterModel> =
-        response.results.map { dto -> toModel(dto) }
+    override fun toModel(response: CharactersResponseDto): CharactersPageModel =
+        CharactersPageModel(
+            count = response.info.count,
+            pages = response.info.pages,
+            nextPage = response.info.next?.toInt(),
+            prevPage = response.info.prev?.toInt(),
+            results = response.results.map { dto -> toModel(dto) }
+        )
 
     override fun toModel(dto: CharacterDto): CharacterModel =
         CharacterModel(
@@ -40,9 +47,14 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
 
     override fun toError(throwable: Throwable): AppError =
         when (throwable) {
-            is HttpException -> AppError.Http(code = throwable.code(), message = throwable.message())
+            is HttpException -> AppError.Http(
+                code = throwable.code(),
+                message = throwable.message()
+            )
+
             is JsonDataException,
             is JsonEncodingException -> AppError.Serialization(cause = throwable)
+
             is IOException -> AppError.Network(cause = throwable)
             else -> AppError.Unexpected(cause = throwable)
         }
