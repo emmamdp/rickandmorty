@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Top bar -->
     <string name="characters_list_title">Personajes</string>
-    <string name="characters_list_empty_placeholder">Aún no hay personajes.\nLos cargaremos en breve.</string>
+
+    <!-- Screen states -->
+    <string name="characters_list_empty_placeholder">No hay personajes para mostrar.</string>
+    <string name="characters_list_error_placeholder">Ha ocurrido un error. Inténtalo de nuevo.</string>
+    <string name="characters_list_loading">Cargando personajes…</string>
+    <string name="characters_list_retry">Reintentar</string>
+
+    <!-- Accesibilidad -->
+    <string name="character_item_image_cd">Imagen del personaje: %1$s</string>
+    <string name="characters_grid_cd">Cuadrícula de personajes</string>
+    <string name="characters_loading_cd">Cargando personajes</string>
+    <string name="characters_error_cd">Error al cargar personajes</string>
+    <string name="characters_empty_cd">No hay personajes disponibles</string>
 </resources>

@@ -8,6 +8,7 @@ val MortyYellow = Color(0xFFF5E050)
 
 val Neutral100 = Color(0xFFFFFFFF)
 val Neutral98 = Color(0xFFFAFAFA)
+val Neutral90 = Color(0xFFE0E0E0)
 val Neutral30 = Color(0xFF4F4F4F)
 val Neutral10 = Color(0xFF1B1B1B)
 val Neutral0  = Color(0xFF000000)
