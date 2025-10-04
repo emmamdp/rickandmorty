@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.emdp.rickandmorty.core.navigation.RickAndMortyNavRoutes
+import com.emdp.rickandmorty.features.characterdetail.navigation.rickAndMortyCharacterDetailScreen
 import com.emdp.rickandmorty.features.characterslist.navigation.rickAndMortyCharactersListScreen
 import com.emdp.rickandmorty.features.splash.navigation.rickAndMortySplashScreen
 
@@ -25,6 +26,10 @@ fun RickAndMortyAppNavHost() {
                     launchSingleTop = true
                 }
             }
+        )
+
+        rickAndMortyCharacterDetailScreen(
+            onBackClick = { nav.popBackStack() }
         )
     }
 }
