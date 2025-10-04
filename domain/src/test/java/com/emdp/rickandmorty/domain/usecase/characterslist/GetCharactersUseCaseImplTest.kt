@@ -1,77 +1,49 @@
 package com.emdp.rickandmorty.domain.usecase.characterslist
 
-import com.emdp.rickandmorty.core.common.result.AppError
-import com.emdp.rickandmorty.core.common.result.DataResult
-import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
+import androidx.paging.PagingData
+import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 
 internal class GetCharactersUseCaseImplTest {
 
-    private val repository: CharactersRepository = Mockito.mock(CharactersRepository::class.java)
+    private val repository: CharactersRepository = mock(CharactersRepository::class.java)
     private val useCase: GetCharactersUseCase = GetCharactersUseCaseImpl(repository)
 
     @Test
-    fun `invoke returns Success and delegates filters to repository`() = runTest {
-        val params = GetCharactersUseCase.Params(
-            page = 2,
-            name = "rick",
-            status = "alive",
-            species = "human",
-            type = null,
-            gender = "male"
-        )
-        val page = CharactersPageModelMother.mock()
-        val expected = DataResult.Success(page)
+    fun `invoke delegates to repository with same non-null filter and returns same flow`() =
+        runTest {
+            val filter = CharactersFilterModelMother.mock()
+            val expectedFlow: Flow<PagingData<CharacterModel>> = flowOf(PagingData.empty())
 
-        whenever(
-            repository.getCharacters(
-                page = params.page,
-                name = params.name,
-                status = params.status,
-                species = params.species,
-                type = params.type,
-                gender = params.gender
-            )
-        ).thenReturn(expected)
+            whenever(repository.getCharactersPaged(filter)).thenReturn(expectedFlow)
 
-        val result = useCase(params)
+            val result = useCase(filter)
 
-        assertTrue(result is DataResult.Success)
-        assertEquals(page, (result as DataResult.Success).data)
-        verify(repository).getCharacters(
-            page = params.page,
-            name = params.name,
-            status = params.status,
-            species = params.species,
-            type = params.type,
-            gender = params.gender
-        )
-    }
+            assertSame(expectedFlow, result)
+            verify(repository, times(1)).getCharactersPaged(filter)
+            verifyNoMoreInteractions(repository)
+        }
 
     @Test
-    fun `invoke returns Error when repository fails`() = runTest {
-        val params = GetCharactersUseCase.Params()
-        val expected = DataResult.Error(AppError.Network(Exception("timeout")))
+    fun `invoke delegates to repository with null filter and returns same flow`() = runTest {
+        val expectedFlow: Flow<PagingData<CharacterModel>> = flowOf(PagingData.empty())
 
-        whenever(
-            repository.getCharacters(
-                page = null, name = null, status = null, species = null, type = null, gender = null
-            )
-        ).thenReturn(expected)
+        whenever(repository.getCharactersPaged(null)).thenReturn(expectedFlow)
 
-        val result = useCase(params)
+        val result = useCase.invoke(null)
 
-        assertTrue(result is DataResult.Error)
-        assertEquals(expected.error, (result as DataResult.Error).error)
-        verify(repository).getCharacters(
-            page = null, name = null, status = null, species = null, type = null, gender = null
-        )
+        assertSame(expectedFlow, result)
+        verify(repository, times(1)).getCharactersPaged(null)
+        verifyNoMoreInteractions(repository)
     }
 }

@@ -6,14 +6,29 @@ internal object RemoteKeysEntityMother {
     private const val T1 = 100L
     private const val T2 = 200L
 
-    private val default =
-        RemoteKeysEntity(characterId = 1, prevKey = null, nextKey = 2, updatedAt = NOW)
+    private val default = RemoteKeysEntity(
+        characterId = 1,
+        prevKey = null,
+        nextKey = 2,
+        updatedAt = NOW
+    )
 
     fun mock01() = default
 
-    fun mock02() = default.copy(characterId = 2, prevKey = 1, nextKey = 3)
+    fun mock02() = default.copy(
+        characterId = 2,
+        prevKey = 1,
+        nextKey = 3
+    )
 
     fun mock01T1() = default.copy(updatedAt = T1)
 
     fun mock02T2() = mock02().copy(updatedAt = T2)
+
+    fun mockSetId(id: Int) = default.copy(
+        characterId = id,
+        prevKey = 1,
+        nextKey = 2,
+        updatedAt = 0L
+    )
 }

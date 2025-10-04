@@ -11,4 +11,12 @@ internal object CharactersResponseDtoMother {
     )
 
     fun mock() = default
+
+    fun mockInfoNextUrl(next: String?) = default.copy(
+        info = InfoDtoMother.mockNextUrl(next)
+    )
+
+    fun mockInfoPrevUrl(prev: String?) = default.copy(
+        info = InfoDtoMother.mockPrevUrl(prev)
+    )
 }

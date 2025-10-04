@@ -1,23 +1,27 @@
 package com.emdp.rickandmorty.features.characterslist.presentation
 
-import com.emdp.rickandmorty.core.common.result.AppError
-import com.emdp.rickandmorty.core.common.result.DataResult
+import androidx.paging.PagingData
 import com.emdp.rickandmorty.domain.models.CharacterModel
-import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
-import com.emdp.rickandmorty.features.characterslist.domain.models.CharacterModelMother
+import com.emdp.rickandmorty.features.characterslist.domain.models.CharactersFilterModelMother
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -32,9 +36,7 @@ internal class CharactersListViewModelTest {
     @BeforeEach
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = CharactersListViewModel(
-            getCharactersUseCase = getCharactersUseCase
-        )
+        viewModel = CharactersListViewModel(getCharactersUseCase = getCharactersUseCase)
     }
 
     @AfterEach
@@ -43,67 +45,64 @@ internal class CharactersListViewModelTest {
     }
 
     @Test
-    fun `loadInitial success updates state with items and stops loading`() = runTest {
-        val domainItems = CharacterModelMother.mockList()
-        val page = dummyPage(domainItems)
-        whenever(getCharactersUseCase.invoke(eq(GetCharactersUseCase.Params(page = 1))))
-            .thenReturn(DataResult.Success(page))
+    fun `characters initial subscription invokes use case with null filter`() =
+        runTest {
+            whenever(getCharactersUseCase.invoke(null))
+                .thenReturn(flowOf(PagingData.empty()))
 
-        viewModel.loadInitial()
-        testDispatcher.scheduler.advanceUntilIdle()
+            val emitted = viewModel.characters.first()
 
-        val state = viewModel.uiState.first()
-        assertEquals(false, state.isLoading)
-        assertEquals(null, state.error)
-        assertEquals(2, state.items.size)
-        assertEquals("Rick", state.items[0].name)
+            verify(getCharactersUseCase, times(1)).invoke(null)
+            assertSame(emitted::class, PagingData.empty<CharacterModel>()::class)
+        }
+
+    @Test
+    fun `applyFilter delegates to use case with the same filter`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
+
+        whenever(getCharactersUseCase.invoke(eq(filter)))
+            .thenReturn(flowOf(PagingData.empty()))
+
+        viewModel.applyFilter(filter)
+        viewModel.characters.first()
+
+        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
     }
 
     @Test
-    fun `loadInitial error updates state with error and stops loading`() = runTest {
-        val error = AppError.Network()
-        whenever(getCharactersUseCase.invoke(any()))
-            .thenReturn(DataResult.Error(error))
+    fun `clearFilter after non-null filter delegates to use case with null`() = runTest {
+        val filter = CharactersFilterModelMother.mockMortyWithNulls()
 
-        viewModel.loadInitial()
+        whenever(getCharactersUseCase.invoke(anyOrNull()))
+            .thenReturn(flowOf(PagingData.empty()))
+
+        viewModel.applyFilter(filter)
+
+        val job = launch { viewModel.characters.collect { } }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
+
+        viewModel.clearFilter()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.first()
-        assertEquals(false, state.isLoading)
-        assertEquals(emptyList<CharacterModel>(), state.items)
-        assertEquals(error, state.error)
+        verify(getCharactersUseCase, times(1)).invoke(null)
+
+        job.cancel()
     }
 
     @Test
-    fun `retry re-executes last request`() = runTest {
-        val error = AppError.Unexpected()
-        whenever(getCharactersUseCase.invoke(eq(GetCharactersUseCase.Params(page = 1))))
-            .thenReturn(DataResult.Error(error))
+    fun `loadInitial sets flag to true only once`() = runTest {
+        val field = CharactersListViewModel::class.java
+            .getDeclaredField("hasLoadedInitially")
+            .apply { isAccessible = true }
+
+        assertFalse(field.getBoolean(viewModel))
 
         viewModel.loadInitial()
-        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(field.getBoolean(viewModel))
 
-        val domainItems = CharacterModelMother.mockListWithOneCharacter()
-        val page = dummyPage(domainItems)
-        whenever(getCharactersUseCase.invoke(eq(GetCharactersUseCase.Params(page = 1))))
-            .thenReturn(DataResult.Success(page))
-
-        viewModel.retry()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.uiState.first()
-        assertEquals(false, state.isLoading)
-        assertEquals(null, state.error)
-        assertEquals(1, state.items.size)
-        assertEquals(3, state.items.first().id)
+        viewModel.loadInitial()
+        assertTrue(field.getBoolean(viewModel))
     }
-
-    private fun dummyPage(items: List<CharacterModel>) =
-        CharactersPageModel(
-            count = 20,
-            pages = 4,
-            nextPage = 2,
-            prevPage = 1,
-            results = items
-        )
 }
