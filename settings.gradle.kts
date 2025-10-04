@@ -31,5 +31,6 @@ include(
     ":data",
     ":domain",
     ":features:splash",
-    ":features:characterslist"
+    ":features:characterslist",
+    ":features:characterdetail"
 )

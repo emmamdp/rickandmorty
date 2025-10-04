@@ -43,6 +43,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.features.splash)
     implementation(projects.features.characterslist)
+    implementation(projects.features.characterdetail)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
