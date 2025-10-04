@@ -4,7 +4,8 @@ import com.emdp.rickandmorty.data.di.rickAndMortyNetworkModule
 import com.emdp.rickandmorty.data.di.rickAndMortyRemoteModule
 import com.emdp.rickandmorty.data.di.rickAndMortyRoomModule
 import com.emdp.rickandmorty.domain.di.rickAndMortyDomainModule
-import com.emdp.rickandmorty.features.characterslist.di.charactersLisPresentationModule
+import com.emdp.rickandmorty.features.characterdetail.di.characterDetailPresentationModule
+import com.emdp.rickandmorty.features.characterslist.di.charactersListPresentationModule
 import org.koin.core.module.Module
 
 object RickAndMortyDiModules {
@@ -13,6 +14,7 @@ object RickAndMortyDiModules {
         rickAndMortyRoomModule,
         rickAndMortyRemoteModule,
         rickAndMortyDomainModule,
-        charactersLisPresentationModule
+        charactersListPresentationModule,
+        characterDetailPresentationModule
     )
 }

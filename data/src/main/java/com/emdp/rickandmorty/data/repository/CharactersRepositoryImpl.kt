@@ -6,10 +6,10 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.emdp.rickandmorty.core.common.result.DataResult
+import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediatorFactory
-import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalPagingApi::class)
 class CharactersRepositoryImpl(
-    private val remoteSource: CharactersRemoteSource,
+    private val localSource: CharacterLocalSource,
     private val charactersDao: CharactersDao,
     private val mediatorFactory: CharactersRemoteMediatorFactory,
     private val localMapper: CharacterLocalMapper
@@ -54,7 +54,7 @@ class CharactersRepositoryImpl(
     }
 
     override suspend fun getCharacterById(id: Int): DataResult<CharacterModel> =
-        remoteSource.getCharacterById(id)
+        localSource.getCharacterById(id)
 
     companion object {
         private const val PAGE_SIZE = 20

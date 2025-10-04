@@ -4,6 +4,6 @@ import com.emdp.rickandmorty.features.characterslist.presentation.CharactersList
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-val charactersLisPresentationModule = module {
+val charactersListPresentationModule = module {
     viewModelOf(::CharactersListViewModel)
 }

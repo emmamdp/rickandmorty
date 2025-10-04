@@ -2,6 +2,8 @@ package com.emdp.rickandmorty.data.di
 
 import android.content.Context
 import androidx.room.Room
+import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
+import com.emdp.rickandmorty.data.source.local.CharacterLocalSourceImpl
 import com.emdp.rickandmorty.data.source.local.RickAndMortyDatabase
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapperImpl
@@ -24,4 +26,5 @@ val rickAndMortyRoomModule = module {
     single { get<RickAndMortyDatabase>().remoteKeysDao() }
 
     singleOf(::CharacterLocalMapperImpl) { bind<CharacterLocalMapper>() }
+    singleOf(::CharacterLocalSourceImpl) { bind<CharacterLocalSource>() }
 }
