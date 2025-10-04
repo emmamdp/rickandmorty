@@ -15,7 +15,6 @@ import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.ALIVE
 import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.DEAD
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import retrofit2.HttpException
 import java.io.IOException
 import com.emdp.rickandmorty.domain.models.enums.CharacterStatus.UNKNOWN as CHARACTER_STATUS_UNKNOWN
@@ -26,8 +25,8 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
         CharactersPageModel(
             count = response.info.count,
             pages = response.info.pages,
-            nextPage = response.info.next.extractPageParam(),
-            prevPage = response.info.prev.extractPageParam(),
+            nextPage = extractPageParam(url = response.info.next),
+            prevPage = extractPageParam(url = response.info.prev),
             results = response.results.map { dto -> toModel(dto) }
         )
 
@@ -75,10 +74,22 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
             else -> UNKNOWN
         }
 
-    private fun String?.extractPageParam(): Int? =
-        this?.toHttpUrlOrNull()
-            ?.queryParameter(PAGE)
-            ?.toIntOrNull()
+    private fun extractPageParam(url: String?): Int? {
+        if (url.isNullOrBlank()) return null
+        val qIndex = url.indexOf('?')
+        if (qIndex == -1 || qIndex == url.lastIndex) return null
+        val query = url.substring(qIndex + 1)
+
+        for (pair in query.split('&')) {
+            val eq = pair.indexOf('=')
+            if (eq <= 0) continue
+            val key = pair.substring(0, eq)
+            if (key != PAGE) continue
+            val value = pair.substring(eq + 1)
+            return value.toIntOrNull()
+        }
+        return null
+    }
 
     companion object {
         private const val STATUS_ALIVE = "alive"

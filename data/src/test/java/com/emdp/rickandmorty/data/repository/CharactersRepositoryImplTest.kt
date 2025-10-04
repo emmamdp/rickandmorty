@@ -1,79 +1,88 @@
 package com.emdp.rickandmorty.data.repository
 
+import androidx.paging.ExperimentalPagingApi
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
+import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
+import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
+import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediator
+import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediatorFactory
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
-import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
+import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
-import java.io.IOException
 
+@OptIn(ExperimentalPagingApi::class)
 internal class CharactersRepositoryImplTest {
 
     private val remoteSource: CharactersRemoteSource =
-        Mockito.mock(CharactersRemoteSource::class.java)
-    private val repository = CharactersRepositoryImpl(remoteSource)
+        mock(CharactersRemoteSource::class.java)
+    private val charactersDao: CharactersDao =
+        mock(CharactersDao::class.java)
+    private val mediatorFactory: CharactersRemoteMediatorFactory =
+        mock(CharactersRemoteMediatorFactory::class.java)
+    private val localMapper: CharacterLocalMapper =
+        mock(CharacterLocalMapper::class.java)
+
+    private val repository = CharactersRepositoryImpl(
+        remoteSource,
+        charactersDao,
+        mediatorFactory,
+        localMapper
+    )
 
     @Test
-    fun `getCharacters returns Success and delegates to remote with filters`() = runTest {
-        val page = 1
-        val name = "rick"
-        val status = "alive"
-        val species = "human"
-        val type: String? = null
-        val gender = "male"
-        val expectedList = CharactersPageModelMother.mock()
-        val expected = DataResult.Success(expectedList)
+    fun `getCharactersPaged creates mediator with the same filter`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
 
-        whenever(
-            remoteSource.getCharacters(page, name, status, species, type, gender)
-        ).thenReturn(expected)
+        val flow = repository.getCharactersPaged(filter)
 
-        val result = repository.getCharacters(page, name, status, species, type, gender)
-
-        assertTrue(result is DataResult.Success)
-        assertEquals(expectedList, (result as DataResult.Success).data)
-        verify(remoteSource, times(1))
-            .getCharacters(page, name, status, species, type, gender)
+        assertNotNull(flow)
+        verify(mediatorFactory, times(1)).create(filter)
+        verifyNoInteractions(remoteSource)
+        verifyNoInteractions(charactersDao)
     }
 
     @Test
-    fun `getCharacters returns Error when remote fails`() = runTest {
-        val expected = DataResult.Error(error = AppError.Network(IOException("timeout")))
+    fun `getCharactersPaged invokes dao pagingSource with filter`() = runTest {
+        val mediator = mock(CharactersRemoteMediator::class.java)
+        val filter = CharactersFilterModelMother.mock()
 
         whenever(
-            remoteSource.getCharacters(
-                page = null,
-                name = null,
-                status = null,
-                species = null,
-                type = null,
-                gender = null
+            charactersDao.pagingSource(
+                name = anyOrNull(),
+                status = anyOrNull(),
+                species = anyOrNull(),
+                type = anyOrNull(),
+                gender = anyOrNull()
             )
-        ).thenReturn(expected)
+        ).thenReturn(EmptyPagingSource())
+        whenever(mediatorFactory.create(filter)).thenReturn(mediator)
 
-        val result = repository.getCharacters(
-            page = null, name = null, status = null, species = null, type = null, gender = null
+        repository.getCharactersPaged(filter).first()
+
+        verify(mediatorFactory, times(1)).create(filter)
+        verify(charactersDao, times(1)).pagingSource(
+            name = eq(RICK),
+            status = eq(ALIVE),
+            species = eq(HUMAN),
+            type = isNull(),
+            gender = eq(GENDER_MALE)
         )
-
-        assertTrue(result is DataResult.Error)
-        assertEquals(expected.error, (result as DataResult.Error).error)
-        verify(remoteSource, times(1))
-            .getCharacters(
-                page = null,
-                name = null,
-                status = null,
-                species = null,
-                type = null,
-                gender = null
-            )
+        verifyNoInteractions(remoteSource)
     }
 
     @Test
@@ -100,5 +109,12 @@ internal class CharactersRepositoryImplTest {
         assertTrue(result is DataResult.Error)
         assertEquals(expected.error, (result as DataResult.Error).error)
         verify(remoteSource, times(1)).getCharacterById(42)
+    }
+
+    companion object {
+        private const val RICK = "Rick"
+        private const val ALIVE = "Alive"
+        private const val HUMAN = "Human"
+        private const val GENDER_MALE = "Male"
     }
 }

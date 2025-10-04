@@ -11,21 +11,21 @@ interface CharactersDao {
 
     @Query(
         """
-        SELECT * FROM characters
-        WHERE (:name IS NULL OR name LIKE '%' || :name || '%' ESCAPE '\' )
-          AND (:status IS NULL OR status = :status)
-          AND (:gender IS NULL OR gender = :gender)
-          AND (:species IS NULL OR species = :species)
-          AND (:type IS NULL OR type = :type)
-        ORDER BY name COLLATE NOCASE ASC, id ASC
-        """
+            SELECT * FROM characters
+            WHERE (:name IS NULL OR name LIKE '%' || :name || '%')
+              AND (:status IS NULL OR status = :status)
+              AND (:species IS NULL OR species = :species)
+              AND (:type IS NULL OR type = :type)
+              AND (:gender IS NULL OR gender = :gender)
+            ORDER BY id ASC
+            """
     )
     fun pagingSource(
-        name: String? = null,
-        status: String? = null,
-        gender: String? = null,
-        species: String? = null,
-        type: String? = null
+        name: String?,
+        status: String?,
+        species: String?,
+        type: String?,
+        gender: String?
     ): PagingSource<Int, CharacterEntity>
 
     @Query("SELECT * FROM characters WHERE id = :id LIMIT 1")
@@ -36,7 +36,4 @@ interface CharactersDao {
 
     @Query("DELETE FROM characters")
     suspend fun clearAll()
-
-    @Query("SELECT COUNT(*) FROM characters")
-    suspend fun count(): Int
 }

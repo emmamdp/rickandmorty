@@ -1,14 +1,17 @@
 package com.emdp.rickandmorty.domain.models
 
+import com.emdp.rickandmorty.domain.models.enums.CharacterGender
+import com.emdp.rickandmorty.domain.models.enums.CharacterStatus
+
 internal object CharacterModelMother {
 
     private val default = CharacterModel(
         id = 1,
         name = "Rick",
-        status = com.emdp.rickandmorty.domain.models.enums.CharacterStatus.ALIVE,
+        status = CharacterStatus.ALIVE,
         species = "Human",
         type = "",
-        gender = com.emdp.rickandmorty.domain.models.enums.CharacterGender.MALE,
+        gender = CharacterGender.MALE,
         originName = "Earth",
         locationName = "Citadel",
         imageUrl = "img",
@@ -21,5 +24,19 @@ internal object CharacterModelMother {
     fun mockList() = listOf(
         default,
         default.copy(id = 2, name = "Morty")
+    )
+
+    fun mockRandomCharacter(id: Int) = default.copy(
+        id = id,
+        name = "Char ${id}",
+        status = CharacterStatus.ALIVE,
+        species = "Human",
+        type = "",
+        gender = CharacterGender.MALE,
+        originName = "Earth",
+        locationName = "Citadel",
+        imageUrl = "https://img/${id}.png",
+        episodeUrls = emptyList(),
+        createdIso = "2020-01-01T00:00:00Z"
     )
 }

@@ -9,8 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -20,8 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +35,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.core.ui.loader.MultiverseLoader
@@ -52,8 +55,8 @@ fun CharactersListScreen(
     onCharacterClick: (Int) -> Unit,
     viewModel: CharactersListViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
+    val characters = viewModel.characters.collectAsLazyPagingItems()
+    val gridState = rememberLazyGridState()
     LaunchedEffect(Unit) { viewModel.loadInitial() }
 
     RickAndMortyGradientBackground {
@@ -72,21 +75,53 @@ fun CharactersListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues = padding),
-                contentAlignment = Alignment.Center
+                    .padding(paddingValues = padding)
             ) {
-                when {
-                    uiState.isLoading -> CharactersLoading()
-                    uiState.error != null -> CharactersError(
-                        message = stringResource(R.string.characters_list_error_placeholder),
-                        onRetry = { viewModel.retry() }
-                    )
+                CharactersGrid(
+                    items = characters,
+                    onCharacterClick = onCharacterClick,
+                    gridState = gridState
+                )
 
-                    uiState.items.isEmpty() -> CharactersEmpty()
-                    else -> CharactersGrid(
-                        items = uiState.items,
-                        onCharacterClick = onCharacterClick
-                    )
+                val refresh = characters.loadState.refresh
+                val isEmpty = characters.itemCount == 0
+
+                when {
+                    isEmpty && refresh is LoadState.Loading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { CharactersLoading() }
+                    }
+
+                    isEmpty && refresh is LoadState.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CharactersError(
+                                message = stringResource(R.string.characters_list_error_placeholder),
+                                onRetry = { characters.retry() }
+                            )
+                        }
+                    }
+
+                    isEmpty && refresh is LoadState.NotLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { CharactersEmpty() }
+                    }
+                }
+
+                val append = characters.loadState.append
+                if (append is LoadState.Loading && characters.itemCount > 0) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        MultiverseLoader(showMessage = false)
+                    }
                 }
             }
         }
@@ -136,21 +171,30 @@ private fun CharactersEmpty() {
 
 @Composable
 private fun CharactersGrid(
-    items: List<CharacterModel>,
-    onCharacterClick: (Int) -> Unit
+    items: androidx.paging.compose.LazyPagingItems<CharacterModel>,
+    onCharacterClick: (Int) -> Unit,
+    gridState: LazyGridState
 ) {
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(2),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        items(items, key = { it.id }) { character ->
-            CharacterCard(
-                character = character,
-                onClick = { onCharacterClick(character.id) }
-            )
+        items(
+            count = items.itemCount,
+            key = items.itemKey { it.id },
+            contentType = items.itemContentType()
+        ) { index ->
+            val character = items[index] ?: return@items
+            Box {
+                CharacterCard(
+                    character = character,
+                    onClick = { onCharacterClick(character.id) }
+                )
+            }
         }
     }
 }
@@ -162,9 +206,7 @@ private fun CharacterCard(
 ) {
     Card(
         onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = Neutral90
-        ),
+        colors = CardDefaults.cardColors(containerColor = Neutral90),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .semantics {
@@ -172,9 +214,7 @@ private fun CharacterCard(
                 contentDescription = character.name
             }
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
-        ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
             AsyncImage(
                 model = character.imageUrl,
                 contentDescription = stringResource(
@@ -185,7 +225,11 @@ private fun CharacterCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(ratio = 1f)
-                    .shadow(elevation = 6.dp, shape = MaterialTheme.shapes.medium, clip = false)
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = MaterialTheme.shapes.medium,
+                        clip = false
+                    )
                     .clip(MaterialTheme.shapes.medium)
             )
 
