@@ -3,7 +3,6 @@ package com.emdp.rickandmorty.data.source.remote
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.remote.api.CharactersApi
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
-import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersPageModel
 
 class CharactersRemoteSourceImpl(
@@ -24,12 +23,4 @@ class CharactersRemoteSourceImpl(
     }.getOrElse { throwable ->
         DataResult.Error(error = mapper.toError(throwable))
     }
-
-    override suspend fun getCharacterById(id: Int): DataResult<CharacterModel> =
-        runCatching {
-            val dto = api.getCharacterById(id)
-            DataResult.Success(data = mapper.toModel(dto))
-        }.getOrElse { throwable ->
-            DataResult.Error(error = mapper.toError(throwable))
-        }
 }

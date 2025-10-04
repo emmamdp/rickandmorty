@@ -2,4 +2,25 @@
 <resources>
     <string name="character_detail_title">Character detail</string>
     <string name="character_detail_loading">Loading character…</string>
+    <string name="character_detail_error">We couldn’t load this character.</string>
+    <string name="character_detail_retry">Retry</string>
+
+    <string name="character_detail_image_cd">Image of %1$s</string>
+    <string name="character_detail_status">Status</string>
+    <string name="character_detail_species">Species</string>
+    <string name="character_detail_gender">Gender</string>
+    <string name="character_detail_type">Type</string>
+    <string name="character_detail_origin">Origin</string>
+    <string name="character_detail_location">Location</string>
+    <string name="character_detail_episodes">Episodes</string>
+    <string name="character_detail_unknown">Unknown</string>
+
+    <string name="character_status_alive">Alive</string>
+    <string name="character_status_dead">Dead</string>
+    <string name="character_status_unknown">Unknown</string>
+
+    <string name="character_gender_female">Female</string>
+    <string name="character_gender_male">Male</string>
+    <string name="character_gender_genderless">Genderless</string>
+    <string name="character_gender_unknown">Unknown</string>
 </resources>

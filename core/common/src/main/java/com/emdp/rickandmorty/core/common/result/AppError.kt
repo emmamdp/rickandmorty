@@ -5,4 +5,5 @@ sealed interface AppError {
     data class Http(val code: Int, val message: String? = null) : AppError
     data class Serialization(val cause: Throwable? = null) : AppError
     data class Unexpected(val cause: Throwable? = null) : AppError
+    data object DataNotFound : AppError
 }

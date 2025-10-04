@@ -3,11 +3,11 @@ package com.emdp.rickandmorty.data.repository
 import androidx.paging.ExperimentalPagingApi
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
+import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediator
 import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediatorFactory
-import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
 import kotlinx.coroutines.flow.first
@@ -28,17 +28,13 @@ import org.mockito.kotlin.whenever
 @OptIn(ExperimentalPagingApi::class)
 internal class CharactersRepositoryImplTest {
 
-    private val remoteSource: CharactersRemoteSource =
-        mock(CharactersRemoteSource::class.java)
-    private val charactersDao: CharactersDao =
-        mock(CharactersDao::class.java)
-    private val mediatorFactory: CharactersRemoteMediatorFactory =
-        mock(CharactersRemoteMediatorFactory::class.java)
-    private val localMapper: CharacterLocalMapper =
-        mock(CharacterLocalMapper::class.java)
+    private val localSource: CharacterLocalSource = mock()
+    private val charactersDao: CharactersDao = mock()
+    private val mediatorFactory: CharactersRemoteMediatorFactory = mock()
+    private val localMapper: CharacterLocalMapper = mock()
 
     private val repository = CharactersRepositoryImpl(
-        remoteSource,
+        localSource,
         charactersDao,
         mediatorFactory,
         localMapper
@@ -52,7 +48,7 @@ internal class CharactersRepositoryImplTest {
 
         assertNotNull(flow)
         verify(mediatorFactory, times(1)).create(filter)
-        verifyNoInteractions(remoteSource)
+        verifyNoInteractions(localSource)
         verifyNoInteractions(charactersDao)
     }
 
@@ -82,7 +78,7 @@ internal class CharactersRepositoryImplTest {
             type = isNull(),
             gender = eq(GENDER_MALE)
         )
-        verifyNoInteractions(remoteSource)
+        verifyNoInteractions(localSource)
     }
 
     @Test
@@ -90,25 +86,25 @@ internal class CharactersRepositoryImplTest {
         val expectedModel = CharacterModelMother.mockRick()
         val expected = DataResult.Success(expectedModel)
 
-        whenever(remoteSource.getCharacterById(1)).thenReturn(expected)
+        whenever(localSource.getCharacterById(1)).thenReturn(expected)
 
         val result = repository.getCharacterById(1)
 
         assertTrue(result is DataResult.Success)
         assertEquals(expectedModel, (result as DataResult.Success).data)
-        verify(remoteSource, times(1)).getCharacterById(1)
+        verify(localSource, times(1)).getCharacterById(1)
     }
 
     @Test
     fun `getCharacterById returns Error when remote fails`() = runTest {
         val expected = DataResult.Error(AppError.Unexpected(IllegalStateException("boom")))
-        whenever(remoteSource.getCharacterById(42)).thenReturn(expected)
+        whenever(localSource.getCharacterById(42)).thenReturn(expected)
 
         val result = repository.getCharacterById(42)
 
         assertTrue(result is DataResult.Error)
         assertEquals(expected.error, (result as DataResult.Error).error)
-        verify(remoteSource, times(1)).getCharacterById(42)
+        verify(localSource, times(1)).getCharacterById(42)
     }
 
     companion object {

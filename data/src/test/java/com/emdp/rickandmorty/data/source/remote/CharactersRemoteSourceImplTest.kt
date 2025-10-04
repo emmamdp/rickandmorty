@@ -3,10 +3,8 @@ package com.emdp.rickandmorty.data.source.remote
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.remote.api.CharactersApi
-import com.emdp.rickandmorty.data.source.remote.dto.CharacterDtoMother
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDtoMother
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
-import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.doAnswer
@@ -27,8 +26,9 @@ import java.io.IOException
 
 internal class CharactersRemoteSourceImplTest {
 
-    private val api: CharactersApi = Mockito.mock(CharactersApi::class.java)
-    private val mapper: CharactersRemoteMapper = Mockito.mock(CharactersRemoteMapper::class.java)
+    private val api: CharactersApi = mock()
+    private val mapper: CharactersRemoteMapper = mock()
+
     private val source: CharactersRemoteSource = CharactersRemoteSourceImpl(api, mapper)
 
     @Test
@@ -115,38 +115,6 @@ internal class CharactersRemoteSourceImplTest {
         assertTrue(err is AppError.Http)
         assertEquals(404, (err as AppError.Http).code)
         verify(mapper, times(1)).toError(http)
-    }
-
-    @Test
-    fun `getCharacterById returns Success and maps dto`() = runTest {
-        val dto = CharacterDtoMother.mockRick()
-        val model = CharacterModelMother.mockRick()
-
-        whenever(api.getCharacterById(1)).thenReturn(dto)
-        whenever(mapper.toModel(dto)).thenReturn(model)
-
-        val result = source.getCharacterById(1)
-
-        assertTrue(result is DataResult.Success)
-        assertEquals(model, (result as DataResult.Success).data)
-        verify(api, times(1)).getCharacterById(1)
-        verify(mapper, times(1)).toModel(dto)
-    }
-
-    @Test
-    fun `getCharacterById returns Error using mapper toError`() = runTest {
-        val boom = IllegalStateException("boom")
-        val expected = AppError.Unexpected(boom)
-
-        whenever(api.getCharacterById(42)).thenThrow(boom)
-        whenever(mapper.toError(boom)).thenReturn(expected)
-
-        val result = source.getCharacterById(42)
-
-        assertTrue(result is DataResult.Error)
-        assertEquals(expected, (result as DataResult.Error).error)
-        verify(api, times(1)).getCharacterById(42)
-        verify(mapper, times(1)).toError(boom)
     }
 
     companion object {
