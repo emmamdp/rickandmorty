@@ -8,25 +8,28 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -37,9 +40,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.core.ui.loader.MultiverseLoader
 import com.emdp.rickandmorty.core.ui.text.AppTextStyles
@@ -56,8 +60,9 @@ fun CharactersListScreen(
     viewModel: CharactersListViewModel = koinViewModel()
 ) {
     val characters = viewModel.characters.collectAsLazyPagingItems()
-    val gridState = rememberLazyGridState()
-    LaunchedEffect(Unit) { viewModel.loadInitial() }
+    val gridState = remember { LazyGridState() }
+
+    LaunchedEffect(true) { viewModel.loadInitial() }
 
     RickAndMortyGradientBackground {
         Scaffold(
@@ -77,12 +82,6 @@ fun CharactersListScreen(
                     .fillMaxSize()
                     .padding(paddingValues = padding)
             ) {
-                CharactersGrid(
-                    items = characters,
-                    onCharacterClick = onCharacterClick,
-                    gridState = gridState
-                )
-
                 val refresh = characters.loadState.refresh
                 val isEmpty = characters.itemCount == 0
 
@@ -112,15 +111,13 @@ fun CharactersListScreen(
                             contentAlignment = Alignment.Center
                         ) { CharactersEmpty() }
                     }
-                }
 
-                val append = characters.loadState.append
-                if (append is LoadState.Loading && characters.itemCount > 0) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        MultiverseLoader(showMessage = false)
+                    else -> {
+                        CharactersGrid(
+                            items = characters,
+                            onCharacterClick = onCharacterClick,
+                            gridState = gridState
+                        )
                     }
                 }
             }
@@ -186,14 +183,50 @@ private fun CharactersGrid(
         items(
             count = items.itemCount,
             key = items.itemKey { it.id },
-            contentType = items.itemContentType()
+            contentType = { "character" }
         ) { index ->
             val character = items[index] ?: return@items
-            Box {
-                CharacterCard(
-                    character = character,
-                    onClick = { onCharacterClick(character.id) }
-                )
+            CharacterCard(
+                character = character,
+                onClick = { onCharacterClick(character.id) }
+            )
+        }
+
+        val appendState = items.loadState.append
+        if (appendState is LoadState.Loading) {
+            item(
+                key = "loading_footer",
+                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        strokeWidth = 3.dp
+                    )
+                }
+            }
+        }
+
+        if (appendState is LoadState.Error) {
+            item(
+                key = "error_footer",
+                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(onClick = { items.retry() }) {
+                        Text(text = stringResource(R.string.characters_list_retry))
+                    }
+                }
             }
         }
     }
@@ -216,7 +249,12 @@ private fun CharacterCard(
     ) {
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
             AsyncImage(
-                model = character.imageUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(character.imageUrl)
+                    .crossfade(true)
+                    .memoryCacheKey(character.imageUrl)
+                    .diskCacheKey(character.imageUrl)
+                    .build(),
                 contentDescription = stringResource(
                     R.string.character_item_image_cd,
                     character.name
@@ -228,7 +266,7 @@ private fun CharacterCard(
                     .shadow(
                         elevation = 6.dp,
                         shape = MaterialTheme.shapes.medium,
-                        clip = false
+                        clip = true
                     )
                     .clip(MaterialTheme.shapes.medium)
             )

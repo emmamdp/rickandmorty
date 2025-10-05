@@ -10,17 +10,33 @@ import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharactersListViewModel(
     private val getCharactersUseCase: GetCharactersUseCase
 ) : ViewModel() {
 
-    private val filterState = MutableStateFlow<CharactersFilterModel?>(null)
+    private val _filterState: MutableStateFlow<CharactersFilterModel?> = MutableStateFlow(null)
+    val filterState: StateFlow<CharactersFilterModel?> = _filterState.asStateFlow()
+
+    private val stableFilter =
+        filterState.distinctUntilChangedBy { it.toCanonicalKey() }
+
+    init {
+        viewModelScope.launch {
+            stableFilter.collect { filter ->
+                println("🎯 FILTRO (stable) CAMBIÓ: ${filter.toCanonicalKey()}")
+            }
+        }
+    }
 
     val characters: Flow<PagingData<CharacterModel>> =
-        filterState
+        stableFilter
             .flatMapLatest(getCharactersUseCase::invoke)
             .cachedIn(viewModelScope)
 
@@ -32,10 +48,24 @@ class CharactersListViewModel(
     }
 
     fun applyFilter(filter: CharactersFilterModel?) {
-        filterState.value = filter
+        if (_filterState.value.toCanonicalKey() != filter.toCanonicalKey()) {
+            _filterState.value = filter
+        }
     }
 
     fun clearFilter() {
-        filterState.value = null
+        if (_filterState.value != null) {
+            _filterState.value = null
+        }
     }
 }
+
+private fun CharactersFilterModel?.toCanonicalKey(): String =
+    if (this == null) "null"
+    else buildString {
+        append(name?.trim().orEmpty()); append('|')
+        append(status?.trim()?.lowercase().orEmpty()); append('|')
+        append(species?.trim().orEmpty()); append('|')
+        append(type?.trim().orEmpty()); append('|')
+        append(gender?.trim()?.lowercase().orEmpty())
+    }

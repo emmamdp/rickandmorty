@@ -24,5 +24,6 @@ data class CharacterEntity(
     val imageUrl: String,
     val originName: String?,
     val locationName: String?,
-    val created: String?
+    val created: String?,
+    val orderIndex: Long = 0L
 )

@@ -42,9 +42,10 @@ class CharactersRepositoryImpl(
         return Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
-                initialLoadSize = INITIAL_LOAD_SIZE,
+                initialLoadSize = PAGE_SIZE,
                 prefetchDistance = PREFETCH_DISTANCE,
-                enablePlaceholders = ENABLE_PLACEHOLDERS
+                enablePlaceholders = ENABLE_PLACEHOLDERS,
+                maxSize = PagingConfig.MAX_SIZE_UNBOUNDED
             ),
             remoteMediator = mediator,
             pagingSourceFactory = pagingSourceFactory
@@ -58,8 +59,7 @@ class CharactersRepositoryImpl(
 
     companion object {
         private const val PAGE_SIZE = 20
-        private const val INITIAL_LOAD_SIZE = PAGE_SIZE
-        private const val PREFETCH_DISTANCE = 2
+        private const val PREFETCH_DISTANCE = 3
         private const val ENABLE_PLACEHOLDERS = false
     }
 }

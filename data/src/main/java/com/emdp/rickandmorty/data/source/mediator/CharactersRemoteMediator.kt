@@ -5,7 +5,6 @@ import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
-import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.RickAndMortyDatabase
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
@@ -16,7 +15,8 @@ import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
 import com.emdp.rickandmorty.domain.models.CharactersPageModel
-import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalPagingApi::class)
 class CharactersRemoteMediator(
@@ -25,110 +25,156 @@ class CharactersRemoteMediator(
     private val remoteKeysDao: RemoteKeysDao,
     private val remoteSource: CharactersRemoteSource,
     private val toEntity: (List<CharacterModel>) -> List<CharacterEntity>,
-    private val filter: CharactersFilterModel?,
-    private val runInTransaction: suspend (suspend () -> Unit) -> Unit = { block ->
-        database.withTransaction { block() }
-    }
+    private val filter: CharactersFilterModel?
 ) : RemoteMediator<Int, CharacterEntity>() {
+
+    @Volatile
+    private var isLoading = false
 
     override suspend fun load(
         loadType: LoadType,
         state: PagingState<Int, CharacterEntity>
-    ): MediatorResult = try {
+    ): MediatorResult = withContext(Dispatchers.IO) {
 
-        val page = when (loadType) {
-            LoadType.REFRESH -> getRemoteKeyClosestToCurrentPosition(state)?.nextKey?.minus(1) ?: 1
-            LoadType.PREPEND -> {
-                val remoteKeys = getRemoteKeyForFirstItem(state)
-                val prevKey = remoteKeys?.prevKey
-                if (prevKey == null) return MediatorResult.Success(endOfPaginationReached = true)
-                prevKey
-            }
-            LoadType.APPEND -> {
-                val remoteKeys = getRemoteKeyForLastItem(state)
-                val nextKey = remoteKeys?.nextKey
-                if (nextKey == null) return MediatorResult.Success(endOfPaginationReached = true)
-                nextKey
-            }
-        }
+        if (isLoading) return@withContext MediatorResult.Success(endOfPaginationReached = false)
 
-        val pageResult: CharactersPageModel = fetchPage(page)
-        val items = pageResult.results
-        val endOfPaginationReached = items.isEmpty() || page >= pageResult.pages
-        val prevKey = if (page > 1) page - 1 else null
-        val nextKey = if (!endOfPaginationReached) page + 1 else null
+        isLoading = true
 
-        persistPage(loadType, items, prevKey, nextKey)
+        try {
+            val page = when (loadType) {
+                LoadType.REFRESH -> 1
+                LoadType.PREPEND -> {
+                    val remoteKeys = getRemoteKeyForFirstItem(state)
+                    val prevKey = remoteKeys?.prevKey
+                    if (prevKey == null) {
+                        return@withContext MediatorResult.Success(endOfPaginationReached = true)
+                    }
+                    prevKey
+                }
 
-        MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
-    } catch (e: Exception) {
-        MediatorResult.Error(e)
-    }
-
-    private suspend fun fetchPage(page: Int): CharactersPageModel =
-        when (val result = remoteSource.getCharacters(
-            page = page,
-            name = filter?.name,
-            status = filter?.status,
-            species = filter?.species,
-            type = filter?.type,
-            gender = filter?.gender
-        )) {
-            is DataResult.Success -> result.data
-            is DataResult.Error   -> throw mapAppErrorToException(result.error)
-        }
-
-    private suspend fun persistPage(
-        loadType: LoadType,
-        items: List<CharacterModel>,
-        prevKey: Int?,
-        nextKey: Int?
-    ) {
-        runInTransaction {
-            if (loadType == LoadType.REFRESH) {
-                remoteKeysDao.clearRemoteKeys()
-                charactersDao.clearAll()
+                LoadType.APPEND -> {
+                    val remoteKeys = getRemoteKeyForLastItem(state)
+                    val nextKey = remoteKeys?.nextKey
+                    if (nextKey == null) {
+                        return@withContext MediatorResult.Success(endOfPaginationReached = true)
+                    }
+                    nextKey
+                }
             }
 
-            val entities = toEntity(items)
-            charactersDao.upsertAll(entities)
+            val query = filter.toQueryParts()
 
-            val now = System.currentTimeMillis()
-            val keys = items.map { c ->
-                RemoteKeysEntity(
-                    characterId = c.id,
-                    prevKey = prevKey,
-                    nextKey = nextKey,
-                    updatedAt = now
+            when (
+                val result = remoteSource.getCharacters(
+                    page = page,
+                    name = query.name,
+                    status = query.status,
+                    species = query.species,
+                    type = query.type,
+                    gender = query.gender
                 )
+            ) {
+                is DataResult.Error -> {
+                    return@withContext MediatorResult.Error(
+                        RuntimeException("Remote error: ${result.error}")
+                    )
+                }
+
+                is DataResult.Success -> {
+                    val pageModel: CharactersPageModel = result.data
+                    val items = pageModel.results
+                    val endOfPaginationReached = pageModel.nextPage == null
+
+                    database.withTransaction {
+                        if (loadType == LoadType.REFRESH) {
+                            remoteKeysDao.clearRemoteKeys()
+                            charactersDao.clearAll()
+                        }
+
+                        if (items.isNotEmpty()) {
+                            val mapped = toEntity(items)
+                            val currentMax = charactersDao.maxOrderIndex() ?: -1L
+                            val startIndex = when (loadType) {
+                                LoadType.REFRESH -> 0L
+                                LoadType.APPEND, LoadType.PREPEND -> currentMax + 1L
+                            }
+
+                            val entitiesWithOrder = mapped.mapIndexed { i, e ->
+                                e.copy(orderIndex = startIndex + i)
+                            }
+
+                            if (loadType == LoadType.APPEND) {
+                                try {
+                                    charactersDao.insertAll(entitiesWithOrder)
+                                } catch (e: Exception) {
+                                    charactersDao.upsertAll(entitiesWithOrder)
+                                }
+                            } else {
+                                charactersDao.upsertAll(entitiesWithOrder)
+                            }
+
+                            val prevKey = if (page > 1) page - 1 else null
+                            val nextKey = if (!endOfPaginationReached) page + 1 else null
+
+                            val keys = entitiesWithOrder.map { e ->
+                                RemoteKeysEntity(
+                                    characterId = e.id,
+                                    prevKey = prevKey,
+                                    nextKey = nextKey,
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                            }
+                            remoteKeysDao.upsertAll(keys)
+                        }
+                    }
+
+                    return@withContext MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
+                }
             }
-            remoteKeysDao.upsertAll(keys)
+        } catch (e: Exception) {
+            return@withContext MediatorResult.Error(e)
+        } finally {
+            isLoading = false
         }
     }
 
     private suspend fun getRemoteKeyForLastItem(
         state: PagingState<Int, CharacterEntity>
-    ): RemoteKeysEntity? =
-        state.pages.lastOrNull { it.data.isNotEmpty() }?.data?.lastOrNull()
-            ?.let { entity -> remoteKeysDao.remoteKeysById(entity.id) }
+    ): RemoteKeysEntity? {
+        val lastItem = state.pages.lastOrNull { it.data.isNotEmpty() }?.data?.lastOrNull()
+            ?: charactersDao.lastItem()
+
+        return lastItem?.let { entity ->
+            remoteKeysDao.remoteKeysById(entity.id)
+        }
+    }
 
     private suspend fun getRemoteKeyForFirstItem(
         state: PagingState<Int, CharacterEntity>
-    ): RemoteKeysEntity? =
-        state.pages.firstOrNull { it.data.isNotEmpty() }?.data?.firstOrNull()
-            ?.let { entity -> remoteKeysDao.remoteKeysById(entity.id) }
+    ): RemoteKeysEntity? {
+        val firstItem = state.pages.firstOrNull { it.data.isNotEmpty() }?.data?.firstOrNull()
+            ?: charactersDao.firstItem()
 
-    private suspend fun getRemoteKeyClosestToCurrentPosition(
-        state: PagingState<Int, CharacterEntity>
-    ): RemoteKeysEntity? =
-        state.anchorPosition?.let { pos -> state.closestItemToPosition(pos)?.id }
-            ?.let { id -> remoteKeysDao.remoteKeysById(id) }
-
-    private fun mapAppErrorToException(error: AppError): Exception =
-        when (error) {
-            is AppError.Network       -> IOException("Network error")
-            is AppError.Serialization -> IOException("Serialization error")
-            is AppError.Unexpected    -> RuntimeException(Throwable("Unknown error"))
-            else -> RuntimeException(error.toString())
+        return firstItem?.let { entity ->
+            remoteKeysDao.remoteKeysById(entity.id)
         }
+    }
+
+    private fun CharactersFilterModel?.toQueryParts(): QueryParts {
+        return QueryParts(
+            name = this?.name?.takeIf { it.isNotBlank() },
+            status = this?.status?.lowercase()?.takeIf { it.isNotBlank() },
+            species = this?.species?.takeIf { it.isNotBlank() },
+            type = this?.type?.takeIf { it.isNotBlank() },
+            gender = this?.gender?.lowercase()?.takeIf { it.isNotBlank() }
+        )
+    }
+
+    private data class QueryParts(
+        val name: String?,
+        val status: String?,
+        val species: String?,
+        val type: String?,
+        val gender: String?
+    )
 }
