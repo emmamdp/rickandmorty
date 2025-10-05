@@ -28,18 +28,10 @@ class CharactersRemoteMediator(
     private val filter: CharactersFilterModel?
 ) : RemoteMediator<Int, CharacterEntity>() {
 
-    @Volatile
-    private var isLoading = false
-
     override suspend fun load(
         loadType: LoadType,
         state: PagingState<Int, CharacterEntity>
     ): MediatorResult = withContext(Dispatchers.IO) {
-
-        if (isLoading) return@withContext MediatorResult.Success(endOfPaginationReached = false)
-
-        isLoading = true
-
         try {
             val page = when (loadType) {
                 LoadType.REFRESH -> 1
@@ -93,6 +85,7 @@ class CharactersRemoteMediator(
 
                         if (items.isNotEmpty()) {
                             val mapped = toEntity(items)
+
                             val currentMax = charactersDao.maxOrderIndex() ?: -1L
                             val startIndex = when (loadType) {
                                 LoadType.REFRESH -> 0L
@@ -103,15 +96,7 @@ class CharactersRemoteMediator(
                                 e.copy(orderIndex = startIndex + i)
                             }
 
-                            if (loadType == LoadType.APPEND) {
-                                try {
-                                    charactersDao.insertAll(entitiesWithOrder)
-                                } catch (e: Exception) {
-                                    charactersDao.upsertAll(entitiesWithOrder)
-                                }
-                            } else {
-                                charactersDao.upsertAll(entitiesWithOrder)
-                            }
+                            charactersDao.upsertAll(entitiesWithOrder)
 
                             val prevKey = if (page > 1) page - 1 else null
                             val nextKey = if (!endOfPaginationReached) page + 1 else null
@@ -127,14 +112,12 @@ class CharactersRemoteMediator(
                             remoteKeysDao.upsertAll(keys)
                         }
                     }
-
                     return@withContext MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
                 }
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             return@withContext MediatorResult.Error(e)
-        } finally {
-            isLoading = false
         }
     }
 
