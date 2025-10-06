@@ -15,4 +15,9 @@
     <string name="characters_loading_cd">Cargando personajes</string>
     <string name="characters_error_cd">Error al cargar personajes</string>
     <string name="characters_empty_cd">No hay personajes disponibles</string>
+
+    <!-- Accesibilidad -->
+    <string name="search_characters">Buscar personajes...</string>
+    <string name="search_icon_description">Icono de búsqueda</string>
+    <string name="clear_search">Limpiar búsqueda</string>
 </resources>

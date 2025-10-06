@@ -55,7 +55,6 @@ fun ThemeGallery(modifier: Modifier = Modifier) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Headings over surface
             Text("Headings & Body on Surface", style = MaterialTheme.typography.headlineSmall)
             Text(
                 "This is body text on surface to quickly check contrast with onSurface.",
@@ -64,7 +63,6 @@ fun ThemeGallery(modifier: Modifier = Modifier) {
 
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
-            // Buttons row
             Text("Buttons", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = {}) { Text("Primary") }
@@ -79,7 +77,6 @@ fun ThemeGallery(modifier: Modifier = Modifier) {
 
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
-            // Cards & containers
             Text("Cards & Containers", style = MaterialTheme.typography.titleMedium)
             ElevatedCard(
                 colors = CardDefaults.elevatedCardColors(),
@@ -106,7 +103,6 @@ fun ThemeGallery(modifier: Modifier = Modifier) {
 
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
-            // Text fields (normal + error)
             Text("Text fields", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = "Wubba lubba dub dub",
@@ -126,12 +122,9 @@ fun ThemeGallery(modifier: Modifier = Modifier) {
 
             HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
-            // Icon buttons on primary & on surface
             Text("Icon buttons", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 IconButton(onClick = {}) {
-                    // Replace with any vector from your project if you have one.
-                    // If you don't have icons set up yet, this placeholder avoids compile issues:
                     Text("☆")
                 }
                 IconButton(

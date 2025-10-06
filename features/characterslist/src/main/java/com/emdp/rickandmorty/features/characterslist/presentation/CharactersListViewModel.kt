@@ -12,60 +12,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharactersListViewModel(
     private val getCharactersUseCase: GetCharactersUseCase
 ) : ViewModel() {
 
-    private val _filterState: MutableStateFlow<CharactersFilterModel?> = MutableStateFlow(null)
+    private val _filterState = MutableStateFlow<CharactersFilterModel?>(null)
     val filterState: StateFlow<CharactersFilterModel?> = _filterState.asStateFlow()
 
-    private val stableFilter =
-        filterState.distinctUntilChangedBy { it.toCanonicalKey() }
-
-    init {
-        viewModelScope.launch {
-            stableFilter.collect { filter ->
-                println("🎯 FILTRO (stable) CAMBIÓ: ${filter.toCanonicalKey()}")
-            }
+    val characters: Flow<PagingData<CharacterModel>> = _filterState
+        .flatMapLatest { filter ->
+            getCharactersUseCase.invoke(filter)
         }
-    }
-
-    val characters: Flow<PagingData<CharacterModel>> =
-        stableFilter
-            .flatMapLatest(getCharactersUseCase::invoke)
-            .cachedIn(viewModelScope)
-
-    private var hasLoadedInitially = false
-
-    fun loadInitial() {
-        if (hasLoadedInitially) return
-        hasLoadedInitially = true
-    }
+        .cachedIn(viewModelScope)
 
     fun applyFilter(filter: CharactersFilterModel?) {
-        if (_filterState.value.toCanonicalKey() != filter.toCanonicalKey()) {
-            _filterState.value = filter
-        }
+        _filterState.value = filter
     }
 
     fun clearFilter() {
-        if (_filterState.value != null) {
-            _filterState.value = null
-        }
+        _filterState.value = null
     }
 }
-
-private fun CharactersFilterModel?.toCanonicalKey(): String =
-    if (this == null) "null"
-    else buildString {
-        append(name?.trim().orEmpty()); append('|')
-        append(status?.trim()?.lowercase().orEmpty()); append('|')
-        append(species?.trim().orEmpty()); append('|')
-        append(type?.trim().orEmpty()); append('|')
-        append(gender?.trim()?.lowercase().orEmpty())
-    }

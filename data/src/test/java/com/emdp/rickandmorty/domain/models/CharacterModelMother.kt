@@ -21,22 +21,10 @@ internal object CharacterModelMother {
 
     fun mockRick() = default
 
+    fun mockMorty() = default.copy(id = 2, name = "Morty")
+
     fun mockList() = listOf(
         default,
         default.copy(id = 2, name = "Morty")
-    )
-
-    fun mockRandomCharacter(id: Int) = default.copy(
-        id = id,
-        name = "Char ${id}",
-        status = CharacterStatus.ALIVE,
-        species = "Human",
-        type = "",
-        gender = CharacterGender.MALE,
-        originName = "Earth",
-        locationName = "Citadel",
-        imageUrl = "https://img/${id}.png",
-        episodeUrls = emptyList(),
-        createdIso = "2020-01-01T00:00:00Z"
     )
 }

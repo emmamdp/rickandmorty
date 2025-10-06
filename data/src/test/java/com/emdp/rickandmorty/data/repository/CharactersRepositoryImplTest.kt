@@ -1,16 +1,15 @@
 package com.emdp.rickandmorty.data.repository
 
-import androidx.paging.ExperimentalPagingApi
+import androidx.paging.PagingData
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
-import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
-import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediator
-import com.emdp.rickandmorty.data.source.mediator.CharactersRemoteMediatorFactory
+import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
+import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
+import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -20,69 +19,48 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 
-@OptIn(ExperimentalPagingApi::class)
 internal class CharactersRepositoryImplTest {
 
     private val localSource: CharacterLocalSource = mock()
     private val charactersDao: CharactersDao = mock()
-    private val mediatorFactory: CharactersRemoteMediatorFactory = mock()
-    private val localMapper: CharacterLocalMapper = mock()
+    private val remoteSource: CharactersRemoteSource = mock()
+    private val toEntity: (List<CharacterModel>) -> List<CharacterEntity> = mock()
 
     private val repository = CharactersRepositoryImpl(
-        localSource,
-        charactersDao,
-        mediatorFactory,
-        localMapper
+        localSource = localSource,
+        charactersDao = charactersDao,
+        remoteSource = remoteSource,
+        toEntity = toEntity
     )
 
     @Test
-    fun `getCharactersPaged creates mediator with the same filter`() = runTest {
+    fun `getCharactersPaged returns flow with PagingData`() = runTest {
         val filter = CharactersFilterModelMother.mock()
 
         val flow = repository.getCharactersPaged(filter)
 
         assertNotNull(flow)
-        verify(mediatorFactory, times(1)).create(filter)
+        assertTrue(flow is kotlinx.coroutines.flow.Flow<PagingData<CharacterModel>>)
         verifyNoInteractions(localSource)
         verifyNoInteractions(charactersDao)
+        verifyNoInteractions(remoteSource)
     }
 
     @Test
-    fun `getCharactersPaged invokes dao pagingSource with filter`() = runTest {
-        val mediator = mock(CharactersRemoteMediator::class.java)
-        val filter = CharactersFilterModelMother.mock()
+    fun `getCharactersPaged with null filter returns flow`() = runTest {
+        val flow = repository.getCharactersPaged(filter = null)
 
-        whenever(
-            charactersDao.pagingSource(
-                name = anyOrNull(),
-                status = anyOrNull(),
-                species = anyOrNull(),
-                type = anyOrNull(),
-                gender = anyOrNull()
-            )
-        ).thenReturn(EmptyPagingSource())
-        whenever(mediatorFactory.create(filter)).thenReturn(mediator)
-
-        repository.getCharactersPaged(filter).first()
-
-        verify(mediatorFactory, times(1)).create(filter)
-        verify(charactersDao, times(1)).pagingSource(
-            name = eq(RICK),
-            status = eq(ALIVE),
-            species = eq(HUMAN),
-            type = isNull(),
-            gender = eq(GENDER_MALE)
-        )
+        assertNotNull(flow)
+        assertTrue(flow is kotlinx.coroutines.flow.Flow<PagingData<CharacterModel>>)
         verifyNoInteractions(localSource)
+        verifyNoInteractions(charactersDao)
+        verifyNoInteractions(remoteSource)
     }
 
     @Test
-    fun `getCharacterById returns Success and delegates to remote`() = runTest {
+    fun `getCharacterById returns Success and delegates to localSource`() = runTest {
         val expectedModel = CharacterModelMother.mockRick()
         val expected = DataResult.Success(expectedModel)
 
@@ -93,11 +71,14 @@ internal class CharactersRepositoryImplTest {
         assertTrue(result is DataResult.Success)
         assertEquals(expectedModel, (result as DataResult.Success).data)
         verify(localSource, times(1)).getCharacterById(1)
+        verifyNoInteractions(charactersDao)
+        verifyNoInteractions(remoteSource)
     }
 
     @Test
-    fun `getCharacterById returns Error when remote fails`() = runTest {
+    fun `getCharacterById returns Error when localSource fails`() = runTest {
         val expected = DataResult.Error(AppError.Unexpected(IllegalStateException("boom")))
+
         whenever(localSource.getCharacterById(42)).thenReturn(expected)
 
         val result = repository.getCharacterById(42)
@@ -105,12 +86,20 @@ internal class CharactersRepositoryImplTest {
         assertTrue(result is DataResult.Error)
         assertEquals(expected.error, (result as DataResult.Error).error)
         verify(localSource, times(1)).getCharacterById(42)
+        verifyNoInteractions(charactersDao)
+        verifyNoInteractions(remoteSource)
     }
 
-    companion object {
-        private const val RICK = "Rick"
-        private const val ALIVE = "Alive"
-        private const val HUMAN = "Human"
-        private const val GENDER_MALE = "Male"
+    @Test
+    fun `getCharacterById returns DataNotFound error when character does not exist`() = runTest {
+        val expected = DataResult.Error(AppError.DataNotFound)
+
+        whenever(localSource.getCharacterById(999)).thenReturn(expected)
+
+        val result = repository.getCharacterById(999)
+
+        assertTrue(result is DataResult.Error)
+        assertEquals(AppError.DataNotFound, (result as DataResult.Error).error)
+        verify(localSource, times(1)).getCharacterById(999)
     }
 }

@@ -3,6 +3,7 @@ package com.emdp.rickandmorty.data.source.local.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.SkipQueryVerification
 
 @Entity(
     tableName = "characters",
@@ -14,6 +15,7 @@ import androidx.room.PrimaryKey
         Index(value = ["type"])
     ]
 )
+@SkipQueryVerification
 data class CharacterEntity(
     @PrimaryKey val id: Int,
     val name: String,
@@ -24,6 +26,5 @@ data class CharacterEntity(
     val imageUrl: String,
     val originName: String?,
     val locationName: String?,
-    val created: String?,
-    val orderIndex: Long = 0L
+    val created: String?
 )

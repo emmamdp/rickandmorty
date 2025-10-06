@@ -10,7 +10,4 @@ interface CharacterLocalMapper {
 
     fun toEntityList(models: List<CharacterModel>): List<CharacterEntity> =
         models.map(::toEntity)
-
-    fun toModelList(entities: List<CharacterEntity>): List<CharacterModel> =
-        entities.map(::toModel)
 }

@@ -28,6 +28,7 @@ internal class FakeCharactersDao : CharactersDao {
                     nextKey = null
                 )
             }
+
             override fun getRefreshKey(state: PagingState<Int, CharacterEntity>): Int? = null
         }
     }
