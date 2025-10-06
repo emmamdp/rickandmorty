@@ -1,12 +1,10 @@
 package com.emdp.rickandmorty.features.characterslist.presentation
 
 import androidx.paging.PagingData
-import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import com.emdp.rickandmorty.features.characterslist.domain.models.CharactersFilterModelMother
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -14,9 +12,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
@@ -45,45 +42,21 @@ internal class CharactersListViewModelTest {
     }
 
     @Test
-    fun `characters initial subscription invokes use case with null filter`() =
-        runTest {
-            whenever(getCharactersUseCase.invoke(null))
-                .thenReturn(flowOf(PagingData.empty()))
+    fun `initial filterState is null`() = runTest {
+        val initialFilter = viewModel.filterState.value
 
-            val emitted = viewModel.characters.first()
-
-            verify(getCharactersUseCase, times(1)).invoke(null)
-            assertSame(emitted::class, PagingData.empty<CharacterModel>()::class)
-        }
-
-    @Test
-    fun `applyFilter delegates to use case with the same filter`() = runTest {
-        val filter = CharactersFilterModelMother.mock()
-
-        whenever(getCharactersUseCase.invoke(eq(filter)))
-            .thenReturn(flowOf(PagingData.empty()))
-
-        viewModel.applyFilter(filter)
-        viewModel.characters.first()
-
-        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
+        assertNull(initialFilter)
     }
 
     @Test
-    fun `clearFilter after non-null filter delegates to use case with null`() = runTest {
-        val filter = CharactersFilterModelMother.mockMortyWithNulls()
-
-        whenever(getCharactersUseCase.invoke(anyOrNull()))
+    fun `characters flow invokes use case with null filter initially`() = runTest {
+        whenever(getCharactersUseCase.invoke(null))
             .thenReturn(flowOf(PagingData.empty()))
 
-        viewModel.applyFilter(filter)
+        val job = launch {
+            viewModel.characters.collect { }
+        }
 
-        val job = launch { viewModel.characters.collect { } }
-
-        testDispatcher.scheduler.advanceUntilIdle()
-        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
-
-        viewModel.clearFilter()
         testDispatcher.scheduler.advanceUntilIdle()
 
         verify(getCharactersUseCase, times(1)).invoke(null)
@@ -92,17 +65,71 @@ internal class CharactersListViewModelTest {
     }
 
     @Test
-    fun `loadInitial sets flag to true only once`() = runTest {
-        val field = CharactersListViewModel::class.java
-            .getDeclaredField("hasLoadedInitially")
-            .apply { isAccessible = true }
+    fun `applyFilter updates filterState`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
 
-        assertFalse(field.getBoolean(viewModel))
+        viewModel.applyFilter(filter)
 
-        viewModel.loadInitial()
-        assertTrue(field.getBoolean(viewModel))
+        assertEquals(filter, viewModel.filterState.value)
+    }
 
-        viewModel.loadInitial()
-        assertTrue(field.getBoolean(viewModel))
+    @Test
+    fun `applyFilter triggers new use case invocation`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
+
+        whenever(getCharactersUseCase.invoke(anyOrNull()))
+            .thenReturn(flowOf(PagingData.empty()))
+
+        val job = launch {
+            viewModel.characters.collect { }
+        }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(getCharactersUseCase, times(1)).invoke(null)
+
+        viewModel.applyFilter(filter)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
+
+        job.cancel()
+    }
+
+    @Test
+    fun `clearFilter resets filterState to null`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
+
+        viewModel.applyFilter(filter)
+        assertEquals(filter, viewModel.filterState.value)
+
+        viewModel.clearFilter()
+
+        assertNull(viewModel.filterState.value)
+    }
+
+    @Test
+    fun `clearFilter after non-null filter invokes use case with null`() = runTest {
+        val filter = CharactersFilterModelMother.mock()
+
+        whenever(getCharactersUseCase.invoke(anyOrNull()))
+            .thenReturn(flowOf(PagingData.empty()))
+
+        val job = launch {
+            viewModel.characters.collect { }
+        }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(getCharactersUseCase, times(1)).invoke(null)
+
+        viewModel.applyFilter(filter)
+        testDispatcher.scheduler.advanceUntilIdle()
+        verify(getCharactersUseCase, times(1)).invoke(eq(filter))
+
+        viewModel.clearFilter()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(getCharactersUseCase, times(2)).invoke(null)
+
+        job.cancel()
     }
 }

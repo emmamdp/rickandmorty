@@ -23,7 +23,6 @@ val rickAndMortyRoomModule = module {
     }
 
     single { get<RickAndMortyDatabase>().charactersDao() }
-    single { get<RickAndMortyDatabase>().remoteKeysDao() }
 
     singleOf(::CharacterLocalMapperImpl) { bind<CharacterLocalMapper>() }
     singleOf(::CharacterLocalSourceImpl) { bind<CharacterLocalSource>() }

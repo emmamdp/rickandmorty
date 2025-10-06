@@ -11,10 +11,6 @@ android {
     defaultConfig {
         minSdk = 26
         consumerProguardFiles("consumer-rules.pro")
-
-        buildConfigField("Long", "CHAR_LIST_TTL_MS", "24L * 60L * 60L * 1000L")
-        buildConfigField("Long", "CHAR_DETAIL_TTL_MS", "72L * 60L * 60L * 1000L")
-        buildConfigField("Long", "EPISODES_TTL_MS", "7L * 24L * 60L * 60L * 1000L")
     }
 
     buildFeatures { buildConfig = true }

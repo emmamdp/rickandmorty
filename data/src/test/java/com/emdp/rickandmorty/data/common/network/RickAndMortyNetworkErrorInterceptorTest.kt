@@ -129,8 +129,6 @@ internal class RickAndMortyNetworkErrorInterceptorTest {
         assertFalse(msg.contains(rawJson))
     }
 
-    // Helpers -------------------------------------------------------------------------------
-
     private fun successResponse(): Response {
         val body = """{"ok":true}"""
         return baseResponseBuilder(200)

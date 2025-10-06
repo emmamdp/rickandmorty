@@ -6,9 +6,10 @@ import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCaseImpl
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val rickAndMortyDomainModule = module {
-    factoryOf(::GetCharactersUseCaseImpl) { bind<GetCharactersUseCase>() }
+    singleOf(::GetCharactersUseCaseImpl) { bind<GetCharactersUseCase>() }
     factoryOf(::GetCharacterUseCaseImpl) { bind<GetCharacterUseCase>() }
 }

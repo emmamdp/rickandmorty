@@ -10,7 +10,6 @@ class GetCharactersUseCaseImpl(
     private val repository: CharactersRepository
 ) : GetCharactersUseCase {
 
-    override fun invoke(
-        filter: CharactersFilterModel?
-    ): Flow<PagingData<CharacterModel>> = repository.getCharactersPaged(filter)
+    override fun invoke(filter: CharactersFilterModel?): Flow<PagingData<CharacterModel>> =
+        repository.getCharactersPaged(filter)
 }

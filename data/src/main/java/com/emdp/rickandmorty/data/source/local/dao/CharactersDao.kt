@@ -11,14 +11,14 @@ interface CharactersDao {
 
     @Query(
         """
-            SELECT * FROM characters
-            WHERE (:name IS NULL OR name LIKE '%' || :name || '%')
-              AND (:status IS NULL OR status = :status)
-              AND (:species IS NULL OR species = :species)
-              AND (:type IS NULL OR type = :type)
-              AND (:gender IS NULL OR gender = :gender)
-            ORDER BY id ASC
-            """
+        SELECT * FROM characters
+        WHERE (:name IS NULL OR name LIKE '%' || :name || '%')
+          AND (:status IS NULL OR status = :status)
+          AND (:species IS NULL OR species = :species)
+          AND (:type IS NULL OR type = :type)
+          AND (:gender IS NULL OR gender = :gender)
+        ORDER BY id ASC
+        """
     )
     fun pagingSource(
         name: String?,

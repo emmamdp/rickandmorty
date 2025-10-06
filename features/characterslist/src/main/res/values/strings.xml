@@ -15,4 +15,8 @@
     <string name="characters_loading_cd">Loading characters</string>
     <string name="characters_error_cd">Characters loading error</string>
     <string name="characters_empty_cd">No characters available</string>
+
+    <string name="search_characters">Search characters...</string>
+    <string name="search_icon_description">Search icon</string>
+    <string name="clear_search">Clear search</string>
 </resources>
