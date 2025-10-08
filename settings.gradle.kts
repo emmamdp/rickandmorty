@@ -30,6 +30,7 @@ include(
     ":core:ui",
     ":data",
     ":domain",
+    ":features:home",
     ":features:splash",
     ":features:characterslist",
     ":features:characterdetail"
