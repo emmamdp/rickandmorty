@@ -6,6 +6,7 @@ import androidx.navigation.compose.rememberNavController
 import com.emdp.rickandmorty.core.navigation.RickAndMortyNavRoutes
 import com.emdp.rickandmorty.features.characterdetail.navigation.rickAndMortyCharacterDetailScreen
 import com.emdp.rickandmorty.features.characterslist.navigation.rickAndMortyCharactersListScreen
+import com.emdp.rickandmorty.features.home.navigation.rickAndMortyHomeScreen
 import com.emdp.rickandmorty.features.splash.navigation.rickAndMortySplashScreen
 
 @Composable
@@ -18,6 +19,15 @@ fun RickAndMortyAppNavHost() {
                     popUpTo(RickAndMortyNavRoutes.SplashRoute) { inclusive = true }
                 }
             }
+        )
+
+        rickAndMortyHomeScreen(
+            onNavigateToCharacters = {
+                nav.navigate(RickAndMortyNavRoutes.CharactersListRoute) {
+                    launchSingleTop = true
+                }
+            },
+            onNavigateToSearch = { }
         )
 
         rickAndMortyCharactersListScreen(
