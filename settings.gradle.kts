@@ -30,8 +30,9 @@ include(
     ":core:ui",
     ":data",
     ":domain",
-    ":features:home",
     ":features:splash",
+    ":features:home",
+    ":features:advancedsearch",
     ":features:characterslist",
     ":features:characterdetail"
 )
