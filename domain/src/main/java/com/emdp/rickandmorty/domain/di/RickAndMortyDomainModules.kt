@@ -1,5 +1,7 @@
 package com.emdp.rickandmorty.domain.di
 
+import com.emdp.rickandmorty.domain.usecase.advancedsearch.AdvancedSearchUseCase
+import com.emdp.rickandmorty.domain.usecase.advancedsearch.AdvancedSearchUseCaseImpl
 import com.emdp.rickandmorty.domain.usecase.character.GetCharacterUseCase
 import com.emdp.rickandmorty.domain.usecase.character.GetCharacterUseCaseImpl
 import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
@@ -12,4 +14,5 @@ import org.koin.dsl.module
 val rickAndMortyDomainModule = module {
     singleOf(::GetCharactersUseCaseImpl) { bind<GetCharactersUseCase>() }
     factoryOf(::GetCharacterUseCaseImpl) { bind<GetCharacterUseCase>() }
+    factoryOf(::AdvancedSearchUseCaseImpl) { bind<AdvancedSearchUseCase>() }
 }
