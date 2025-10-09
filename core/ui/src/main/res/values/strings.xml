@@ -2,4 +2,6 @@
 <resources>
     <string name="loader_multiverse_desc">Loading multiverse</string>
     <string name="topbar_back">Back</string>
+
+    <string name="character_item_image_cd">Character image: %1$s</string>
 </resources>

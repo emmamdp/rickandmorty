@@ -10,13 +10,12 @@
     <string name="characters_list_retry">Retry</string>
 
     <!-- Accessibility -->
-    <string name="character_item_image_cd">Character image: %1$s</string>
     <string name="characters_grid_cd">Characters grid</string>
     <string name="characters_loading_cd">Loading characters</string>
     <string name="characters_error_cd">Characters loading error</string>
     <string name="characters_empty_cd">No characters available</string>
 
-    <string name="search_characters">Search characters...</string>
+    <string name="search_characters">Search characters…</string>
     <string name="search_icon_description">Search icon</string>
     <string name="clear_search">Clear search</string>
 </resources>
