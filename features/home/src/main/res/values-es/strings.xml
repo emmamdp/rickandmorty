@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Rick y Morty</string>
+
+    <string name="nav_home">Inicio</string>
+    <string name="nav_characters">Personajes</string>
+    <string name="nav_search">Búsqueda</string>
+
+    <string name="home_welcome">¡Bienvenido!</string>
+    <string name="home_welcome_subtitle">Explora el universo de Rick and Morty</string>
+    <string name="home_explore_characters">Personajes</string>
+    <string name="home_explore_characters_desc">Navega por todos los personajes de la serie</string>
+    <string name="home_advanced_search">Búsqueda Avanzada</string>
+    <string name="home_advanced_search_desc">Filtra personajes por múltiples criterios</string>
+    <string name="home_settings_cd">Ajustes</string>
+
+    <string name="settings_dark_mode">Modo oscuro</string>
+    <string name="settings_language_change">Cambiar idioma (ES/EN)</string>
+    <string name="settings">Ajustes</string>
+    <string name="settings_toast_message">Ajustes aún no está implementado</string>
+</resources>

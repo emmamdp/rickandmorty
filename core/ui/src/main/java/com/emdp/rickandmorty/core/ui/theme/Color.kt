@@ -23,6 +23,15 @@ val ChipPurple = Color(0xFF9B59B6)
 val ChipBlue   = Color(0xFF3498DB)
 val ChipTeal   = Color(0xFF1ABC9C)
 
+val TextPrimaryLight = Color(0xFF1a1a1a)
+val TextPrimaryDark = Neutral100
+
+val TextSecondaryLight = Color(0xFF2d2d2d)
+val TextSecondaryDark = Neutral100.copy(alpha = 0.9f)
+
+val TextTertiaryLight = Color(0xFF3d3d3d)
+val TextTertiaryDark = Neutral100.copy(alpha = 0.8f)
+
 val ContentOnLoader = Neutral100
 
 fun onFor(bg: Color): Color = if (bg.luminance() > 0.5f) Color.Black else Color.White
