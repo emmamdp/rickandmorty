@@ -14,6 +14,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.emdp.rickandmorty.core.navigation.RickAndMortyNavRoutes
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
+import com.emdp.rickandmorty.features.advancedsearch.navigation.rickAndMortyAdvancedSearchScreen
 import com.emdp.rickandmorty.features.characterdetail.navigation.rickAndMortyCharacterDetailScreen
 import com.emdp.rickandmorty.features.characterslist.navigation.rickAndMortyCharactersListScreen
 import com.emdp.rickandmorty.features.home.navigation.rickAndMortyHomeScreen
@@ -109,7 +110,9 @@ private fun RickAndMortyTabsHostScreen(
                 onCharacterClick = { id -> onNavigateToDetail(id) }
             )
 
-            composable(RickAndMortyNavRoutes.AdvancedSearchRoute) { }
+            rickAndMortyAdvancedSearchScreen(
+                onCharacterClick = { id -> onNavigateToDetail(id) }
+            )
         }
     }
 }

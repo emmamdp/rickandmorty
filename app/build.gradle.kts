@@ -43,6 +43,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.features.splash)
     implementation(projects.features.home)
+    implementation(projects.features.advancedsearch)
     implementation(projects.features.characterslist)
     implementation(projects.features.characterdetail)
 
