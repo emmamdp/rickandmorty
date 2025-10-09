@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="advanced_search_title">Advanced Search</string>
+    <string name="advanced_search_placeholder">Search character…</string>
+    <string name="advanced_search_filters">Filters</string>
+    <string name="advanced_search_empty_state">Use the search bar to find characters</string>
+    <string name="advanced_search_no_results">No characters found</string>
+    <string name="advanced_search_retry">Retry</string>
+
+    <string name="filter_status">Status</string>
+    <string name="filter_status_alive">Alive</string>
+    <string name="filter_status_dead">Dead</string>
+    <string name="filter_status_unknown">Unknown</string>
+
+    <string name="filter_species">Species</string>
+    <string name="filter_species_human">Human</string>
+    <string name="filter_species_alien">Alien</string>
+
+    <string name="filter_gender">Gender</string>
+    <string name="filter_gender_male">Male</string>
+    <string name="filter_gender_female">Female</string>
+    <string name="filter_gender_genderless">Genderless</string>
+    <string name="filter_gender_unknown">Unknown</string>
+
+    <string name="filter_type">Type</string>
+    <string name="filter_type_placeholder">e.g. Genetic experiment</string>
+    <string name="filter_clear_all">Clear all filters</string>
+
+    <string name="error_network">No internet connection. Please check your network.</string>
+    <string name="error_not_found">No characters found matching your criteria.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
 </resources>
