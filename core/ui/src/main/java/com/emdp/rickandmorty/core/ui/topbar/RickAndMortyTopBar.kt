@@ -3,6 +3,7 @@ package com.emdp.rickandmorty.core.ui.topbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
@@ -39,7 +40,8 @@ fun RickAndMortyTopBar(
     showBottomAccent: Boolean = true,
     bottomAccentBrush: Brush? = null,
     scrimEnabled: Boolean = true,
-    scrimAlphaStart: Float = 0.18f
+    scrimAlphaStart: Float = 0.18f,
+    actions:  @Composable RowScope.() -> Unit = {}
 ) {
     Column(modifier = modifier) {
         Box {
@@ -82,7 +84,7 @@ fun RickAndMortyTopBar(
                         }
                     }
                 },
-                actions = {},
+                actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
