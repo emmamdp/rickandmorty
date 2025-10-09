@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import kotlinx.coroutines.flow.Flow
 
 interface CharactersRepository {
@@ -11,6 +12,11 @@ interface CharactersRepository {
     fun getCharactersPaged(
         filter: CharactersFilterModel? = null
     ): Flow<PagingData<CharacterModel>>
+
+    suspend fun searchCharacters(
+        page: Int,
+        filters: CharactersFilterModel
+    ): DataResult<CharactersPageModel>
 
     suspend fun getCharacterById(id: Int): DataResult<CharacterModel>
 }

@@ -12,6 +12,7 @@ import com.emdp.rickandmorty.data.source.paging.RickAndMortyPagingSource
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
+import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -43,6 +44,18 @@ class CharactersRepositoryImpl(
             }
         ).flow
     }
+
+    override suspend fun searchCharacters(
+        page: Int,
+        filters: CharactersFilterModel
+    ): DataResult<CharactersPageModel> = remoteSource.getCharacters(
+        page = page,
+        name = filters.name,
+        status = filters.status,
+        species = filters.species,
+        type = filters.type,
+        gender = filters.gender
+    )
 
     override suspend fun getCharacterById(id: Int): DataResult<CharacterModel> =
         localSource.getCharacterById(id)

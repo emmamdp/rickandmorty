@@ -10,6 +10,7 @@ import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
+import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -102,4 +103,99 @@ internal class CharactersRepositoryImplTest {
         assertEquals(AppError.DataNotFound, (result as DataResult.Error).error)
         verify(localSource, times(1)).getCharacterById(999)
     }
+
+    @Test
+    fun `searchCharacters returns Success with CharactersPageModel`() = runTest {
+        val filters = CharactersFilterModelMother.mock()
+        val expectedPage = CharactersPageModelMother.mock()
+        val expected = DataResult.Success(expectedPage)
+
+        whenever(
+            remoteSource.getCharacters(
+                page = 1,
+                name = filters.name,
+                status = filters.status,
+                species = filters.species,
+                type = filters.type,
+                gender = filters.gender
+            )
+        ).thenReturn(expected)
+
+        val result = repository.searchCharacters(page = 1, filters = filters)
+
+        assertTrue(result is DataResult.Success)
+        assertEquals(expectedPage, (result as DataResult.Success).data)
+        verify(remoteSource, times(1)).getCharacters(
+            page = 1,
+            name = filters.name,
+            status = filters.status,
+            species = filters.species,
+            type = filters.type,
+            gender = filters.gender
+        )
+        verifyNoInteractions(localSource)
+        verifyNoInteractions(charactersDao)
+    }
+
+    @Test
+    fun `searchCharacters returns Error when remoteSource fails`() = runTest {
+        val filters = CharactersFilterModelMother.mock()
+        val expected = DataResult.Error(AppError.Network(cause = Exception("No internet")))
+
+        whenever(
+            remoteSource.getCharacters(
+                page = 1,
+                name = filters.name,
+                status = filters.status,
+                species = filters.species,
+                type = filters.type,
+                gender = filters.gender
+            )
+        ).thenReturn(expected)
+
+        val result = repository.searchCharacters(page = 1, filters = filters)
+
+        assertTrue(result is DataResult.Error)
+        assertEquals(expected.error, (result as DataResult.Error).error)
+        verify(remoteSource, times(1)).getCharacters(
+            page = 1,
+            name = filters.name,
+            status = filters.status,
+            species = filters.species,
+            type = filters.type,
+            gender = filters.gender
+        )
+        verifyNoInteractions(localSource)
+    }
+
+    @Test
+    fun `searchCharacters with page 2 calls remoteSource with correct page`() =
+        runTest {
+            val filters = CharactersFilterModelMother.mockNull()
+            val expectedPage = CharactersPageModelMother.mock()
+            val expected = DataResult.Success(expectedPage)
+
+            whenever(
+                remoteSource.getCharacters(
+                    page = 2,
+                    name = null,
+                    status = null,
+                    species = null,
+                    type = null,
+                    gender = null
+                )
+            ).thenReturn(expected)
+
+            val result = repository.searchCharacters(page = 2, filters = filters)
+
+            assertTrue(result is DataResult.Success)
+            verify(remoteSource, times(1)).getCharacters(
+                page = 2,
+                name = null,
+                status = null,
+                species = null,
+                type = null,
+                gender = null
+            )
+        }
 }
