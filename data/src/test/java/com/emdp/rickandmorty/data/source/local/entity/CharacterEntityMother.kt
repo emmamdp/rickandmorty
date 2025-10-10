@@ -13,6 +13,7 @@ internal object CharacterEntityMother {
         imageUrl = "https://example.com/image.png",
         originName = null,
         locationName = null,
+        episodes = null,
         created = "2017-11-04T18:48:46.250Z"
     )
     private val characterMortySmith = character.copy(id = 2, name = "Morty Smith")
@@ -33,14 +34,4 @@ internal object CharacterEntityMother {
         character.copy(id = 4, name = "Summer Smith", gender = "Female"),
         character.copy(id = 5, name = "Abradolf Lincler", status = "unknown", type = "Clone")
     )
-
-    fun mockRandomListEntities(min: Int, max: Int) = (min..max).map { id ->
-        character.copy(
-            id = id,
-            name = "Char $id",
-            imageUrl = "https://img/$id.png",
-            originName = "Earth",
-            locationName = "Citadel"
-        )
-    }
 }

@@ -80,6 +80,7 @@ internal class CharacterLocalMapperImplTest {
             imageUrl = "https://img/birdperson.png",
             originName = null,
             locationName = null,
+            episodes = null,
             created = null
         )
 
@@ -110,6 +111,7 @@ internal class CharacterLocalMapperImplTest {
             imageUrl = "https://img/unknown.png",
             originName = "Somewhere",
             locationName = "Nowhere",
+            episodes = listOf("e1"),
             created = "2020-01-01T00:00:00Z"
         )
 
@@ -131,6 +133,7 @@ internal class CharacterLocalMapperImplTest {
             imageUrl = "https://img/case.png",
             originName = "earth",
             locationName = "somewhere",
+            episodes = listOf("e1", "e2"),
             created = "date"
         )
 

@@ -18,6 +18,7 @@ class CharacterLocalMapperImpl : CharacterLocalMapper {
             imageUrl = model.imageUrl,
             originName = model.originName.ifBlank { null },
             locationName = model.locationName.ifBlank { null },
+            episodes = model.episodeUrls.ifEmpty { null },
             created = model.createdIso.ifBlank { null }
         )
     }
@@ -33,7 +34,7 @@ class CharacterLocalMapperImpl : CharacterLocalMapper {
             originName = entity.originName ?: "",
             locationName = entity.locationName ?: "",
             imageUrl = entity.imageUrl,
-            episodeUrls = emptyList(),
+            episodeUrls = entity.episodes ?: emptyList(),
             createdIso = entity.created ?: ""
         )
     }

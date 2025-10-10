@@ -26,5 +26,6 @@ data class CharacterEntity(
     val imageUrl: String,
     val originName: String?,
     val locationName: String?,
+    val episodes: List<String>?,
     val created: String?
 )
