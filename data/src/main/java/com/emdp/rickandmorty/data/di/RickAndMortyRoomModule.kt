@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSourceImpl
 import com.emdp.rickandmorty.data.source.local.RickAndMortyDatabase
+import com.emdp.rickandmorty.data.source.local.dao.CharactersTotalPagesDao
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapperImpl
 import org.koin.core.module.dsl.bind
@@ -12,6 +13,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val rickAndMortyRoomModule = module {
+
     single<RickAndMortyDatabase> {
         Room.databaseBuilder(
             context = get<Context>(),
@@ -23,6 +25,7 @@ val rickAndMortyRoomModule = module {
     }
 
     single { get<RickAndMortyDatabase>().charactersDao() }
+    single<CharactersTotalPagesDao> { get<RickAndMortyDatabase>().charactersTotalPagesDao() }
 
     singleOf(::CharacterLocalMapperImpl) { bind<CharacterLocalMapper>() }
     singleOf(::CharacterLocalSourceImpl) { bind<CharacterLocalSource>() }

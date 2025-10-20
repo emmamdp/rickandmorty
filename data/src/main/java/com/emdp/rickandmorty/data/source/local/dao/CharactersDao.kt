@@ -1,6 +1,5 @@
 package com.emdp.rickandmorty.data.source.local.dao
 
-import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
@@ -18,15 +17,19 @@ interface CharactersDao {
           AND (:type IS NULL OR type = :type)
           AND (:gender IS NULL OR gender = :gender)
         ORDER BY id ASC
+        LIMIT :limit
+        OFFSET :offset
         """
     )
-    fun pagingSource(
+    suspend fun getCharacters(
         name: String?,
         status: String?,
         species: String?,
         type: String?,
-        gender: String?
-    ): PagingSource<Int, CharacterEntity>
+        gender: String?,
+        limit: Int,
+        offset: Int
+    ): List<CharacterEntity>
 
     @Query("SELECT * FROM characters WHERE id = :id LIMIT 1")
     suspend fun getCharacterById(id: Int): CharacterEntity?

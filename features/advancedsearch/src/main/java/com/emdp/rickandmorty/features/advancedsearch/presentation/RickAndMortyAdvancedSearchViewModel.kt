@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
-import com.emdp.rickandmorty.domain.usecase.advancedsearch.AdvancedSearchUseCase
+import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import com.emdp.rickandmorty.features.advancedsearch.common.ErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class RickAndMortyAdvancedSearchViewModel(
-    private val useCase: AdvancedSearchUseCase
+    private val getCharactersUseCase: GetCharactersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AdvancedSearchUiState>(AdvancedSearchUiState.Idle)
@@ -70,10 +70,12 @@ class RickAndMortyAdvancedSearchViewModel(
     }
 
     fun loadMore() {
-        if (!hasMorePages || _uiState.value is AdvancedSearchUiState.LoadingMore) return
+        val currentState = _uiState.value
+        if (!hasMorePages ||
+            currentState !is AdvancedSearchUiState.Success ||
+            currentState.isLoadingMore) return
 
-        _uiState.value = AdvancedSearchUiState.LoadingMore
-        currentPage++
+        _uiState.value = currentState.copy(isLoadingMore = true)
         performSearch(append = true)
     }
 
@@ -83,21 +85,25 @@ class RickAndMortyAdvancedSearchViewModel(
                 _uiState.value = AdvancedSearchUiState.Loading
             }
 
-            when (val result = useCase.invoke(page = currentPage, filters = _filters.value)) {
+            val pageToLoad = if (append) currentPage + 1 else currentPage
+
+            when (val result = getCharactersUseCase(page = pageToLoad, filter = _filters.value)) {
                 is DataResult.Success -> {
-                    val newCharacters = result.data.results
-                    hasMorePages = result.data.nextPage != null
+                    val pagedData = result.data
+                    hasMorePages = pagedData.hasMore
+                    currentPage = pagedData.page
 
                     if (append) {
-                        allCharacters.addAll(newCharacters)
+                        allCharacters.addAll(pagedData.data)
                     } else {
                         allCharacters.clear()
-                        allCharacters.addAll(newCharacters)
+                        allCharacters.addAll(pagedData.data)
                     }
 
                     _uiState.value = AdvancedSearchUiState.Success(
                         characters = allCharacters.toList(),
-                        hasMorePages = hasMorePages
+                        hasMorePages = hasMorePages,
+                        isLoadingMore = false
                     )
                 }
 
@@ -105,7 +111,8 @@ class RickAndMortyAdvancedSearchViewModel(
                     _uiState.value = if (append && allCharacters.isNotEmpty()) {
                         AdvancedSearchUiState.Success(
                             characters = allCharacters.toList(),
-                            hasMorePages = false
+                            hasMorePages = false,
+                            isLoadingMore = false
                         )
                     } else {
                         AdvancedSearchUiState.Error(

@@ -13,12 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,8 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
-import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.core.ui.card.RickAndMortyCharacterCard
 import com.emdp.rickandmorty.core.ui.searchbar.RickAndMortySearchBar
@@ -49,8 +52,12 @@ fun CharactersListScreen(
     onCharacterClick: (Int) -> Unit,
     viewModel: CharactersListViewModel = koinViewModel()
 ) {
-    val characters = viewModel.characters.collectAsLazyPagingItems()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCharacters()
+    }
 
     RickAndMortyGradientBackground {
         Scaffold(
@@ -99,26 +106,25 @@ fun CharactersListScreen(
                         .fillMaxSize()
                         .weight(1f)
                 ) {
-                    val refresh = characters.loadState.refresh
-                    val isEmpty = characters.itemCount == 0
+                    val isEmpty = state.characters.isEmpty()
 
                     when {
-                        isEmpty && refresh is LoadState.Loading -> {
+                        isEmpty && state.isLoading -> {
                             LoadingStateView(
                                 useMultiverseLoader = true,
                                 showMessage = false
                             )
                         }
 
-                        isEmpty && refresh is LoadState.Error -> {
+                        isEmpty && state.error != null -> {
                             ErrorStateView(
                                 message = stringResource(R.string.characters_list_error_placeholder),
-                                onRetry = { characters.retry() },
+                                onRetry = { viewModel.loadCharacters(refresh = true) },
                                 retryButtonText = stringResource(R.string.characters_list_retry)
                             )
                         }
 
-                        isEmpty && refresh is LoadState.NotLoading -> {
+                        isEmpty && !state.isLoading -> {
                             EmptyStateView(
                                 message = stringResource(R.string.characters_list_empty_placeholder)
                             )
@@ -126,8 +132,13 @@ fun CharactersListScreen(
 
                         else -> {
                             CharactersGrid(
-                                items = characters,
+                                characters = state.characters,
+                                isLoadingMore = state.isLoadingMore,
+                                hasMore = state.hasMore,
+                                error = state.error,
                                 onCharacterClick = onCharacterClick,
+                                onLoadMore = { viewModel.loadMore() },
+                                onRetry = { viewModel.loadMore() },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(maxHeight)
@@ -142,35 +153,55 @@ fun CharactersListScreen(
 
 @Composable
 private fun CharactersGrid(
-    items: androidx.paging.compose.LazyPagingItems<CharacterModel>,
+    characters: List<CharacterModel>,
+    isLoadingMore: Boolean,
+    hasMore: Boolean,
+    error: com.emdp.rickandmorty.core.common.result.AppError?,
     onCharacterClick: (Int) -> Unit,
+    onLoadMore: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val gridState = rememberLazyGridState()
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            val layoutInfo = gridState.layoutInfo
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+            val totalItems = layoutInfo.totalItemsCount
+
+            lastVisibleItem != null &&
+                    lastVisibleItem.index >= totalItems - 3 &&
+                    hasMore &&
+                    !isLoadingMore
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            onLoadMore()
+        }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
+        state = gridState,
         contentPadding = PaddingValues(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier
     ) {
         items(
-            count = items.itemCount,
-            key = { index -> items[index]?.id ?: "placeholder_$index" },
-            contentType = { "character" }
-        ) { index ->
-            val character = items[index] ?: return@items
-            with(character) {
-                RickAndMortyCharacterCard(
-                    characterName = name,
-                    imageUrl = imageUrl,
-                    onClick = { onCharacterClick(id) }
-                )
-            }
-
+            items = characters,
+            key = { it.id }
+        ) { character ->
+            RickAndMortyCharacterCard(
+                characterName = character.name,
+                imageUrl = character.imageUrl,
+                onClick = { onCharacterClick(character.id) }
+            )
         }
 
-        val appendState = items.loadState.append
-        if (appendState is LoadState.Loading) {
+        if (isLoadingMore) {
             item(
                 key = "loading_footer",
                 span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
@@ -189,7 +220,7 @@ private fun CharactersGrid(
             }
         }
 
-        if (appendState is LoadState.Error) {
+        if (error != null && !isLoadingMore && characters.isNotEmpty()) {
             item(
                 key = "error_footer",
                 span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
@@ -200,7 +231,7 @@ private fun CharactersGrid(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Button(onClick = { items.retry() }) {
+                    Button(onClick = onRetry) {
                         Text(text = stringResource(R.string.characters_list_retry))
                     }
                 }

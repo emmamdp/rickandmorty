@@ -22,10 +22,9 @@ internal object CharacterEntityMother {
 
     fun mockRick() = character.copy(name = "Rick")
 
-    fun mockList01() = listOf(
-        mockRick(),
-        character.copy(id = 2, name = "Morty")
-    )
+    fun mockMorty() = character.copy(id = 2, name = "Morty")
+
+    fun mockList01() = listOf(mockRick(), mockMorty())
 
     fun mockList02() = listOf(
         character,

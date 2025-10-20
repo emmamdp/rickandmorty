@@ -2,10 +2,9 @@ package com.emdp.rickandmorty.features.advancedsearch.presentation
 
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
-import com.emdp.rickandmorty.domain.models.CharactersPageModel
-import com.emdp.rickandmorty.domain.usecase.advancedsearch.AdvancedSearchUseCase
+import com.emdp.rickandmorty.domain.models.RickAndMortyPagedData
+import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import com.emdp.rickandmorty.features.advancedsearch.models.CharacterModelMother
-import com.emdp.rickandmorty.features.advancedsearch.models.CharactersPageModelMother
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,7 +29,7 @@ import org.mockito.kotlin.whenever
 internal class RickAndMortyAdvancedSearchViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
-    private val useCase: AdvancedSearchUseCase = mock()
+    private val useCase: GetCharactersUseCase = mock()
     private lateinit var viewModel: RickAndMortyAdvancedSearchViewModel
 
     @BeforeEach
@@ -78,50 +77,62 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
 
     @Test
     fun `updateStatus updates filter and triggers search`() = runTest {
-        val page = CharactersPageModelMother.mock()
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = true,
+            totalPages = 5
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateStatus("alive")
         advanceUntilIdle()
 
         assertEquals("alive", viewModel.filters.value.status)
         assertTrue(viewModel.uiState.value is AdvancedSearchUiState.Success)
-        verify(useCase, times(1))
-            .invoke(page = eq(1), filters = any())
+        verify(useCase, times(1)).invoke(page = eq(1), filter = any())
     }
 
     @Test
     fun `updateSpecies updates filter and triggers search`() = runTest {
-        val page = CharactersPageModelMother.mock()
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = true,
+            totalPages = 5
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateSpecies("Human")
         advanceUntilIdle()
 
         assertEquals("Human", viewModel.filters.value.species)
         assertTrue(viewModel.uiState.value is AdvancedSearchUiState.Success)
-        verify(useCase, times(1))
-            .invoke(page = eq(1), filters = any())
+        verify(useCase, times(1)).invoke(page = eq(1), filter = any())
     }
 
     @Test
     fun `updateGender updates filter and triggers search`() = runTest {
-        val page = CharactersPageModelMother.mock()
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = true,
+            totalPages = 5
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateGender("male")
         advanceUntilIdle()
 
         assertEquals("male", viewModel.filters.value.gender)
         assertTrue(viewModel.uiState.value is AdvancedSearchUiState.Success)
-        verify(useCase, times(1))
-            .invoke(page = eq(1), filters = any())
+        verify(useCase, times(1)).invoke(page = eq(1), filter = any())
     }
 
     @Test
@@ -161,10 +172,15 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
 
     @Test
     fun `search with filters returns Success with characters`() = runTest {
-        val page = CharactersPageModelMother.mock()
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick(), CharacterModelMother.mockMorty()),
+            page = 1,
+            hasMore = true,
+            totalPages = 5
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateName("Rick")
         viewModel.search()
@@ -172,16 +188,21 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state is AdvancedSearchUiState.Success)
-        assertEquals(page.results.size, (state as AdvancedSearchUiState.Success).characters.size)
+        assertEquals(pagedData.data.size, (state as AdvancedSearchUiState.Success).characters.size)
         assertTrue(state.hasMorePages)
     }
 
     @Test
-    fun `search with no next page returns Success with hasMorePages false`() = runTest {
-        val page = CharactersPageModelMother.mock().copy(nextPage = null)
+    fun `search with no more pages returns Success with hasMorePages false`() = runTest {
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = false,
+            totalPages = 1
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateName("Rick")
         viewModel.search()
@@ -195,7 +216,7 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
     fun `search with network error returns Error state`() = runTest {
         val error = DataResult.Error(AppError.Network(cause = Exception("No internet")))
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
             .thenReturn(error)
 
         viewModel.updateName("Rick")
@@ -209,7 +230,7 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
     fun `search with 404 error returns Error state`() = runTest {
         val error = DataResult.Error(AppError.Http(code = 404, message = "Not found"))
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
             .thenReturn(error)
 
         viewModel.updateName("Rick")
@@ -221,24 +242,22 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
 
     @Test
     fun `loadMore appends characters to existing list`() = runTest {
-        val page1 = CharactersPageModel(
-            count = 2,
-            pages = 2,
-            nextPage = 2,
-            prevPage = null,
-            results = listOf(CharacterModelMother.mockRick())
+        val page1 = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = true,
+            totalPages = 2
         )
-        val page2 = CharactersPageModel(
-            count = 2,
-            pages = 2,
-            nextPage = null,
-            prevPage = 1,
-            results = listOf(CharacterModelMother.mockMorty())
+        val page2 = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockMorty()),
+            page = 2,
+            hasMore = false,
+            totalPages = 2
         )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
             .thenReturn(DataResult.Success(page1))
-        whenever(useCase.invoke(page = eq(2), filters = any()))
+        whenever(useCase.invoke(page = eq(2), filter = any()))
             .thenReturn(DataResult.Success(page2))
 
         viewModel.updateName("Rick")
@@ -255,10 +274,15 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
 
     @Test
     fun `loadMore when no more pages does nothing`() = runTest {
-        val page = CharactersPageModelMother.mock().copy(nextPage = null)
+        val pagedData = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = false,
+            totalPages = 1
+        )
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
-            .thenReturn(DataResult.Success(page))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
+            .thenReturn(DataResult.Success(pagedData))
 
         viewModel.updateName("Rick")
         viewModel.search()
@@ -267,18 +291,22 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
         viewModel.loadMore()
         advanceUntilIdle()
 
-        verify(useCase, times(1))
-            .invoke(eq(1), any())
+        verify(useCase, times(1)).invoke(eq(1), any())
     }
 
     @Test
     fun `loadMore with error keeps existing characters`() = runTest {
-        val page1 = CharactersPageModelMother.mock()
+        val page1 = RickAndMortyPagedData(
+            data = listOf(CharacterModelMother.mockRick()),
+            page = 1,
+            hasMore = true,
+            totalPages = 2
+        )
         val errorResult = DataResult.Error(AppError.Network(cause = Exception("Error")))
 
-        whenever(useCase.invoke(page = eq(1), filters = any()))
+        whenever(useCase.invoke(page = eq(1), filter = any()))
             .thenReturn(DataResult.Success(page1))
-        whenever(useCase.invoke(page = eq(2), filters = any()))
+        whenever(useCase.invoke(page = eq(2), filter = any()))
             .thenReturn(errorResult)
 
         viewModel.updateName("Rick")
@@ -289,7 +317,7 @@ internal class RickAndMortyAdvancedSearchViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as AdvancedSearchUiState.Success
-        assertEquals(page1.results.size, state.characters.size)
+        assertEquals(page1.data.size, state.characters.size)
         assertEquals(false, state.hasMorePages)
     }
 }

@@ -12,8 +12,8 @@ internal object CharactersFilterModelMother {
 
     fun mock() = default
 
-    fun mockNull() = CharactersFilterModel(
-        name = null,
+    fun mockRickNull() = default.copy(
+        name = "Rick",
         status = null,
         species = null,
         type = null,

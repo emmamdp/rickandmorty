@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -129,20 +128,6 @@ private fun AdvancedSearchContent(
     var showFilters by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
 
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()
-            val totalItems = gridState.layoutInfo.totalItemsCount
-            lastVisibleItem != null && lastVisibleItem.index >= totalItems - LOAD_MORE_THRESHOLD
-        }
-    }
-
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore && uiState is AdvancedSearchUiState.Success && uiState.hasMorePages) {
-            onLoadMore()
-        }
-    }
-
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -191,16 +176,23 @@ private fun AdvancedSearchContent(
 
         Spacer(modifier = Modifier.height(VERTICAL_PADDING.dp))
 
-        GetUiStateViewContent(uiState, gridState, onCharacterClick, onRetry)
+        GetUiStateViewContent(
+            uiState = uiState,
+            gridState = gridState,
+            onCharacterClick = onCharacterClick,
+            onRetry = onRetry,
+            onLoadMore = onLoadMore
+        )
     }
 }
 
 @Composable
 private fun GetUiStateViewContent(
     uiState: AdvancedSearchUiState,
-    gridState: LazyGridState,
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     onCharacterClick: (Int) -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onLoadMore: () -> Unit
 ) = when (uiState) {
     is AdvancedSearchUiState.Idle -> {
         EmptyStateView(
@@ -218,7 +210,26 @@ private fun GetUiStateViewContent(
     }
 
     is AdvancedSearchUiState.Success -> {
-        if (uiState.characters.isEmpty()) {
+        val shouldLoadMore by remember {
+            derivedStateOf {
+                val layoutInfo = gridState.layoutInfo
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+                val totalItems = layoutInfo.totalItemsCount
+
+                lastVisibleItem != null &&
+                        lastVisibleItem.index >= totalItems - LOAD_MORE_THRESHOLD &&
+                        uiState.hasMorePages &&
+                        !uiState.isLoadingMore
+            }
+        }
+
+        LaunchedEffect(shouldLoadMore) {
+            if (shouldLoadMore) {
+                onLoadMore()
+            }
+        }
+
+        if (uiState.characters.isEmpty() && !uiState.isLoadingMore) {
             EmptyStateView(
                 message = stringResource(R.string.advanced_search_no_results),
                 modifier = Modifier.fillMaxSize()
@@ -239,17 +250,18 @@ private fun GetUiStateViewContent(
                     items = uiState.characters,
                     key = { it.id }
                 ) { character ->
-                    with(character) {
-                        RickAndMortyCharacterCard(
-                            characterName = name,
-                            imageUrl = imageUrl,
-                            onClick = { onCharacterClick(id) }
-                        )
-                    }
+                    RickAndMortyCharacterCard(
+                        characterName = character.name,
+                        imageUrl = character.imageUrl,
+                        onClick = { onCharacterClick(character.id) }
+                    )
                 }
 
-                if (uiState.hasMorePages) {
-                    item {
+                if (uiState.isLoadingMore || uiState.hasMorePages) {
+                    item(
+                        key = "loading_footer",
+                        span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
+                    ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -263,8 +275,6 @@ private fun GetUiStateViewContent(
             }
         }
     }
-
-    is AdvancedSearchUiState.LoadingMore -> {}
 
     is AdvancedSearchUiState.Error -> ErrorStateView(
         message = stringResource(uiState.messageRes),

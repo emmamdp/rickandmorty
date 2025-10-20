@@ -1,13 +1,14 @@
 package com.emdp.rickandmorty.domain.usecase.characterslist
 
-import androidx.paging.PagingData
+import com.emdp.rickandmorty.core.common.result.DataResult
+import com.emdp.rickandmorty.domain.models.RickAndMortyPagedData
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
-import kotlinx.coroutines.flow.Flow
 
 interface GetCharactersUseCase {
 
-    operator fun invoke(
+    suspend operator fun invoke(
+        page: Int = 1,
         filter: CharactersFilterModel? = null
-    ): Flow<PagingData<CharacterModel>>
+    ): DataResult<RickAndMortyPagedData<CharacterModel>>
 }

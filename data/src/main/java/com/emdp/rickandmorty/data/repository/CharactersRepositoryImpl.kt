@@ -1,62 +1,68 @@
 package com.emdp.rickandmorty.data.repository
 
-import androidx.paging.ExperimentalPagingApi
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
-import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
-import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
-import com.emdp.rickandmorty.data.source.paging.RickAndMortyPagingSource
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
-import com.emdp.rickandmorty.domain.models.CharactersPageModel
+import com.emdp.rickandmorty.domain.models.RickAndMortyPagedData
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
-import kotlinx.coroutines.flow.Flow
 
-@OptIn(ExperimentalPagingApi::class)
 class CharactersRepositoryImpl(
     private val localSource: CharacterLocalSource,
-    private val charactersDao: CharactersDao,
-    private val remoteSource: CharactersRemoteSource,
-    private val toEntity: (List<CharacterModel>) -> List<CharacterEntity>
+    private val remoteSource: CharactersRemoteSource
 ) : CharactersRepository {
 
-    override fun getCharactersPaged(
-        filter: CharactersFilterModel?
-    ): Flow<PagingData<CharacterModel>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = 20,
-                initialLoadSize = 20,
-                prefetchDistance = 3,
-                enablePlaceholders = false
-            ),
-            pagingSourceFactory = {
-                RickAndMortyPagingSource(
-                    remoteSource = remoteSource,
-                    charactersDao = charactersDao,
-                    toEntity = toEntity,
-                    filter = filter
-                )
-            }
-        ).flow
-    }
-
-    override suspend fun searchCharacters(
+    override suspend fun getCharactersPaged(
         page: Int,
-        filters: CharactersFilterModel
-    ): DataResult<CharactersPageModel> = remoteSource.getCharacters(
-        page = page,
-        name = filters.name,
-        status = filters.status,
-        species = filters.species,
-        type = filters.type,
-        gender = filters.gender
-    )
+        filter: CharactersFilterModel?
+    ): DataResult<RickAndMortyPagedData<CharacterModel>> {
+
+        val localPage = localSource.getCharactersPage(page, PAGE_SIZE, filter)
+        val isFullPage = localPage.size == PAGE_SIZE
+        var data: List<CharacterModel> = localPage
+        var hasMore: Boolean
+        var totalPages: Int?
+
+        if (!isFullPage) {
+            when (val remote = remoteSource.getCharactersPaged(page, filter)) {
+                is DataResult.Success -> {
+                    localSource.upsertCharacters(remote.data.data)
+                    remote.data.totalPages?.let { localSource.saveTotalPages(filter, it) }
+
+                    data = remote.data.data
+                    hasMore = remote.data.hasMore
+                    totalPages = remote.data.totalPages
+                }
+
+                is DataResult.Error -> {
+                    if (localPage.isEmpty()) {
+                        return DataResult.Error(remote.error)
+                    }
+                    totalPages = localSource.getTotalPages(filter)
+                    hasMore = totalPages?.let { page < it } ?: (localPage.size == PAGE_SIZE)
+                    data = localPage
+                }
+            }
+        } else {
+            totalPages = localSource.getTotalPages(filter)
+            hasMore = totalPages?.let { page < it } ?: true
+        }
+
+        return DataResult.Success(
+            RickAndMortyPagedData(
+                data = data,
+                page = page,
+                hasMore = hasMore,
+                totalPages = totalPages
+            )
+        )
+    }
 
     override suspend fun getCharacterById(id: Int): DataResult<CharacterModel> =
         localSource.getCharacterById(id)
+
+    companion object {
+        private const val PAGE_SIZE = 20
+    }
 }

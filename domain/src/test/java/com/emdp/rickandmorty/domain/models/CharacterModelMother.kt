@@ -1,14 +1,17 @@
 package com.emdp.rickandmorty.domain.models
 
+import com.emdp.rickandmorty.domain.models.enums.CharacterGender
+import com.emdp.rickandmorty.domain.models.enums.CharacterStatus
+
 internal object CharacterModelMother {
 
     private val default = CharacterModel(
         id = 1,
         name = "Rick",
-        status = com.emdp.rickandmorty.domain.models.enums.CharacterStatus.ALIVE,
+        status = CharacterStatus.ALIVE,
         species = "Human",
         type = "",
-        gender = com.emdp.rickandmorty.domain.models.enums.CharacterGender.MALE,
+        gender = CharacterGender.MALE,
         originName = "Earth",
         locationName = "Citadel",
         imageUrl = "img",
@@ -17,9 +20,4 @@ internal object CharacterModelMother {
     )
 
     fun mockRick() = default
-
-    fun mockList() = listOf(
-        default,
-        default.copy(id = 2, name = "Morty")
-    )
 }

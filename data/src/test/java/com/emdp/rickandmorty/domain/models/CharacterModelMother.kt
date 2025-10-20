@@ -25,6 +25,6 @@ internal object CharacterModelMother {
 
     fun mockList() = listOf(
         default,
-        default.copy(id = 2, name = "Morty")
+        mockMorty()
     )
 }

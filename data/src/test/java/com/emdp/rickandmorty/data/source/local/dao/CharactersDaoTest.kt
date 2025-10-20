@@ -1,13 +1,8 @@
 package com.emdp.rickandmorty.data.source.local.dao
 
-import androidx.paging.PagingSource
-import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
 import com.emdp.rickandmorty.data.source.local.entity.CharacterEntityMother
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -43,28 +38,20 @@ internal class CharactersDaoTest {
     }
 
     @Test
-    fun pagingSource_withFilters_shouldReturnFilteredSortedData() = runBlocking {
+    fun getCharacters_withFilters_shouldReturnFilteredSortedData() = runBlocking {
         dao.upsertAll(CharacterEntityMother.mockList01())
 
-        val pagingSource: PagingSource<Int, CharacterEntity> = dao.pagingSource(
+        val result = dao.getCharacters(
             name = null,
             status = ALIVE,
             species = HUMAN,
             type = null,
-            gender = null
+            gender = null,
+            limit = 50,
+            offset = 0
         )
 
-        val result = pagingSource.load(
-            PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 50,
-                placeholdersEnabled = false
-            )
-        )
-
-        assertTrue(result is PagingSource.LoadResult.Page)
-        val page = result as PagingSource.LoadResult.Page
-        val names = page.data.map { it.name }
+        val names = result.map { it.name }
         assertEquals(listOf(RICK, MORTY), names)
     }
 
@@ -82,77 +69,54 @@ internal class CharactersDaoTest {
 
         dao.clearAll()
 
-        val paging = dao.pagingSource(
+        val result = dao.getCharacters(
             name = null,
             status = null,
             species = null,
             type = null,
-            gender = null
+            gender = null,
+            limit = 50,
+            offset = 0
         )
-        val result = paging.load(
-            params = PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 50,
-                placeholdersEnabled = false
-            )
-        )
-        assertTrue(result is PagingSource.LoadResult.Page)
-        val page = result as PagingSource.LoadResult.Page
-        assertTrue(page.data.isEmpty())
+        assertTrue(result.isEmpty())
     }
 
     @Test
-    fun pagingSource_whenAllFiltersNull_shouldReturnAllSortedByIdAsc() = runBlocking {
+    fun getCharacters_whenAllFiltersNull_shouldReturnAllSortedByIdAsc() = runBlocking {
         val list = CharacterEntityMother.mockList02()
         dao.upsertAll(list)
 
-        val paging = dao.pagingSource(
+        val result = dao.getCharacters(
             name = null,
             status = null,
             species = null,
             type = null,
-            gender = null
-        )
-        val result = paging.load(
-            params = PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 50,
-                placeholdersEnabled = false
-            )
+            gender = null,
+            limit = 50,
+            offset = 0
         )
 
-        assertTrue(result is PagingSource.LoadResult.Page)
-        val page = result as PagingSource.LoadResult.Page
-        val ids = page.data.map { it.id }
+        val ids = result.map { it.id }
         val sortedIds = ids.sorted()
         assertEquals(sortedIds, ids, ORDER_BY_MESSAGE)
     }
 
     @Test
-    fun pagingSource_filters_shouldRespectOperators() = runBlocking {
+    fun getCharacters_filters_shouldRespectOperators() = runBlocking {
         val list = CharacterEntityMother.mockList02()
         dao.upsertAll(list)
 
-        val paging = dao.pagingSource(
+        val result = dao.getCharacters(
             name = null,
             status = ALIVE,
             species = HUMAN,
             type = SCIENTIST,
-            gender = GENDER_MALE
+            gender = GENDER_MALE,
+            limit = 50,
+            offset = 0
         )
 
-        val result = paging.load(
-            PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 50,
-                placeholdersEnabled = false
-            )
-        )
-
-        assertTrue(result is PagingSource.LoadResult.Page)
-        val page = result as PagingSource.LoadResult.Page
-
-        page.data.forEach { e ->
+        result.forEach { e ->
             assertEquals(ALIVE, e.status)
             assertTrue(e.species.contains(HUMAN, ignoreCase = true))
             assertEquals(SCIENTIST, e.type)
@@ -161,28 +125,39 @@ internal class CharactersDaoTest {
     }
 
     @Test
-    fun pagingSource_whenNoMatches_shouldReturnEmptyPage() = runBlocking {
+    fun getCharacters_whenNoMatches_shouldReturnEmptyList() = runBlocking {
         dao.upsertAll(CharacterEntityMother.mockList02())
 
-        val paging = dao.pagingSource(
+        val result = dao.getCharacters(
             name = NOT_EXISTS,
             status = DEAD,
             species = ROBOT,
             type = UNKNOWN_TYPE,
-            gender = GENDERLESS
+            gender = GENDERLESS,
+            limit = 20,
+            offset = 0
         )
 
-        val result = paging.load(
-            PagingSource.LoadParams.Refresh(
-                key = null,
-                loadSize = 20,
-                placeholdersEnabled = false
-            )
-        )
+        assertTrue(result.isEmpty())
+    }
 
-        assertTrue(result is PagingSource.LoadResult.Page)
-        val page = result as PagingSource.LoadResult.Page
-        assertTrue(page.data.isEmpty())
+    @Test
+    fun getCharacters_withLimitAndOffset_shouldPaginate() = runBlocking {
+        val list = (1..25).map {
+            CharacterEntityMother.mockRick().copy(id = it, name = "Character $it")
+        }
+        dao.upsertAll(list)
+
+        val page1 = dao.getCharacters(null, null, null, null, null, limit = 10, offset = 0)
+        val page2 = dao.getCharacters(null, null, null, null, null, limit = 10, offset = 10)
+        val page3 = dao.getCharacters(null, null, null, null, null, limit = 10, offset = 20)
+
+        assertEquals(10, page1.size)
+        assertEquals(10, page2.size)
+        assertEquals(5, page3.size)
+        assertEquals(1, page1.first().id)
+        assertEquals(11, page2.first().id)
+        assertEquals(21, page3.first().id)
     }
 
     companion object {

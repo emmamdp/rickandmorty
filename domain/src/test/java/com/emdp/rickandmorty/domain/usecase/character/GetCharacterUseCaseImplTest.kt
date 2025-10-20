@@ -8,13 +8,13 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.whenever
 
 internal class GetCharacterUseCaseImplTest {
 
-    private val repository: CharactersRepository = Mockito.mock(CharactersRepository::class.java)
+    private val repository: CharactersRepository = mock()
     private val useCase: GetCharacterUseCase = GetCharacterUseCaseImpl(repository)
 
     @Test
