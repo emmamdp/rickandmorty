@@ -1,6 +1,14 @@
 package com.emdp.rickandmorty.data.source.remote.mapper
 
 import com.emdp.rickandmorty.core.common.result.AppError
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.BadRequest
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.Conflict
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.Forbidden
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.NotFound
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.Serialization
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.ServerError
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.TooManyRequests
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions.Unauthorized
 import com.emdp.rickandmorty.data.source.remote.dto.CharacterDto
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDto
 import com.emdp.rickandmorty.domain.models.CharacterModel
@@ -47,19 +55,37 @@ class CharactersRemoteMapperImpl : CharactersRemoteMapper {
             createdIso = dto.created
         )
 
-    override fun toError(throwable: Throwable): AppError =
-        when (throwable) {
-            is HttpException -> AppError.Http(
+    override fun toError(throwable: Throwable): AppError {
+        val httpCode = when (throwable) {
+            is BadRequest -> 400
+            is Unauthorized -> 401
+            is Forbidden -> 403
+            is NotFound -> 404
+            is Conflict -> 409
+            is TooManyRequests -> 429
+            is ServerError -> throwable.code
+            else -> null
+        }
+
+        return when {
+            httpCode != null -> AppError.Http(
+                code = httpCode,
+                message = throwable.message
+            )
+
+            throwable is HttpException -> AppError.Http(
                 code = throwable.code(),
                 message = throwable.message()
             )
 
-            is JsonDataException,
-            is JsonEncodingException -> AppError.Serialization(cause = throwable)
+            throwable is JsonDataException ||
+                    throwable is JsonEncodingException ||
+                    throwable is Serialization -> AppError.Serialization(cause = throwable)
 
-            is IOException -> AppError.Network(cause = throwable)
+            throwable is IOException -> AppError.Network(cause = throwable)
             else -> AppError.Unexpected(cause = throwable)
         }
+    }
 
     private fun String.toDomainStatus(): CharacterStatus =
         when (this.lowercase()) {

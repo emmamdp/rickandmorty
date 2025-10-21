@@ -23,8 +23,28 @@
     <string name="filter_gender_unknown">Unknown</string>
 
     <string name="filter_type">Type</string>
-    <string name="filter_type_placeholder">e.g. Genetic experiment</string>
     <string name="filter_clear_all">Clear all filters</string>
+    <string name="filter_close">Close</string>
+    <string name="filter_type_none">No type</string>
+    <string name="filter_type_placeholder">Select a type</string>
+
+    <string name="type_none">No type</string>
+    <string name="type_box">Box</string>
+    <string name="type_cat_person">Cat-Person</string>
+    <string name="type_clone">Clone</string>
+    <string name="type_demon">Demon</string>
+    <string name="type_disease">Disease</string>
+    <string name="type_game">Game</string>
+    <string name="type_genetic_experiment">Genetic experiment</string>
+    <string name="type_hivemind">Hivemind</string>
+    <string name="type_lizard_person">Lizard-Person</string>
+    <string name="type_microverse_inhabitant">Microverse inhabitant</string>
+    <string name="type_mythological_creature">Mythological Creature</string>
+    <string name="type_parasite">Parasite</string>
+    <string name="type_robot">Robot</string>
+    <string name="type_self_aware_arm">Self-aware arm</string>
+    <string name="type_sentient_arm">Sentient arm</string>
+    <string name="type_spacecraft">Spacecraft</string>
 
     <string name="error_network">No internet connection. Please check your network.</string>
     <string name="error_not_found">No characters found matching your criteria.</string>

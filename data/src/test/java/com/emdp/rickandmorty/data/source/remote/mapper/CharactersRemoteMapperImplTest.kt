@@ -1,6 +1,7 @@
 package com.emdp.rickandmorty.data.source.remote.mapper
 
 import com.emdp.rickandmorty.core.common.result.AppError
+import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkExceptions
 import com.emdp.rickandmorty.data.source.remote.dto.CharacterDtoMother
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDtoMother
 import com.emdp.rickandmorty.domain.models.enums.CharacterGender
@@ -10,14 +11,16 @@ import com.squareup.moshi.JsonEncodingException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 import retrofit2.HttpException
 import retrofit2.Response
 import java.io.IOException
+import java.util.stream.Stream
 
 internal class CharactersRemoteMapperImplTest {
 
@@ -54,22 +57,17 @@ internal class CharactersRemoteMapperImplTest {
         assertEquals(CharacterStatus.DEAD, pagedData.data[1].status)
     }
 
-    @Test
-    fun `toModel(response) hasMore is true when next is not null`() {
-        val response = CharactersResponseDtoMother.mockInfoNextUrl(next = "https://api/page=2")
+    @ParameterizedTest
+    @CsvSource(
+        "https://api/page=2, true",
+        ", false"
+    )
+    fun `toModel(response) hasMore depends on next URL`(nextUrl: String?, expectedHasMore: Boolean) {
+        val response = CharactersResponseDtoMother.mockInfoNextUrl(next = nextUrl)
 
         val pagedData = mapper.toModel(response = response, requestedPage = 1)
 
-        assertTrue(pagedData.hasMore)
-    }
-
-    @Test
-    fun `toModel(response) hasMore is false when next is null`() {
-        val response = CharactersResponseDtoMother.mockInfoNextUrl(next = null)
-
-        val pagedData = mapper.toModel(response = response, requestedPage = 5)
-
-        assertFalse(pagedData.hasMore)
+        assertEquals(expectedHasMore, pagedData.hasMore)
     }
 
     @Test
@@ -131,31 +129,39 @@ internal class CharactersRemoteMapperImplTest {
         val error = mapper.toError(http)
 
         assertTrue(error is AppError.Http)
-        val httpErr = error as AppError.Http
-        assertEquals(404, httpErr.code)
+        assertEquals(404, (error as AppError.Http).code)
     }
 
-    @Test
-    fun `toError maps JsonDataException to AppError_Serialization`() {
-        val error = mapper.toError(JsonDataException("bad json"))
-        assertTrue(error is AppError.Serialization)
+    @ParameterizedTest
+    @MethodSource("exceptionMappingProvider")
+    fun `toError maps exceptions to correct AppError type`(
+        exception: Throwable,
+        expectedErrorType: Class<out AppError>,
+        expectedCode: Int?
+    ) {
+        val error = mapper.toError(exception)
+
+        assertTrue(expectedErrorType.isInstance(error))
+        if (expectedCode != null && error is AppError.Http) {
+            assertEquals(expectedCode, error.code)
+        }
     }
 
-    @Test
-    fun `toError maps JsonEncodingException to AppError_Serialization`() {
-        val error = mapper.toError(JsonEncodingException("encoding issue"))
-        assertTrue(error is AppError.Serialization)
-    }
-
-    @Test
-    fun `toError maps IOException to AppError_Network`() {
-        val error = mapper.toError(IOException("timeout"))
-        assertTrue(error is AppError.Network)
-    }
-
-    @Test
-    fun `toError maps unexpected Throwable to AppError_Unexpected`() {
-        val error = mapper.toError(IllegalStateException("error"))
-        assertTrue(error is AppError.Unexpected)
+    companion object {
+        @JvmStatic
+        fun exceptionMappingProvider(): Stream<Arguments> = Stream.of(
+            Arguments.of(RickAndMortyNetworkExceptions.BadRequest(), AppError.Http::class.java, 400),
+            Arguments.of(RickAndMortyNetworkExceptions.Unauthorized(), AppError.Http::class.java, 401),
+            Arguments.of(RickAndMortyNetworkExceptions.Forbidden(), AppError.Http::class.java, 403),
+            Arguments.of(RickAndMortyNetworkExceptions.NotFound(), AppError.Http::class.java, 404),
+            Arguments.of(RickAndMortyNetworkExceptions.Conflict(), AppError.Http::class.java, 409),
+            Arguments.of(RickAndMortyNetworkExceptions.TooManyRequests(), AppError.Http::class.java, 429),
+            Arguments.of(RickAndMortyNetworkExceptions.ServerError(code = 503), AppError.Http::class.java, 503),
+            Arguments.of(JsonDataException("bad json"), AppError.Serialization::class.java, null),
+            Arguments.of(JsonEncodingException("encoding issue"), AppError.Serialization::class.java, null),
+            Arguments.of(RickAndMortyNetworkExceptions.Serialization("Invalid JSON"), AppError.Serialization::class.java, null),
+            Arguments.of(IOException("timeout"), AppError.Network::class.java, null),
+            Arguments.of(IllegalStateException("error"), AppError.Unexpected::class.java, null)
+        )
     }
 }

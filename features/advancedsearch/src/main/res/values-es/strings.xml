@@ -23,8 +23,28 @@
     <string name="filter_gender_unknown">Desconocido</string>
 
     <string name="filter_type">Tipo</string>
-    <string name="filter_type_placeholder">ej. Experimento genético</string>
     <string name="filter_clear_all">Limpiar todos los filtros</string>
+    <string name="filter_close">Cerrar</string>
+    <string name="filter_type_none">Sin tipo</string>
+    <string name="filter_type_placeholder">Selecciona un tipo</string>
+
+    <string name="type_none">Sin tipo</string>
+    <string name="type_box">Caja</string>
+    <string name="type_cat_person">Persona-Gato</string>
+    <string name="type_clone">Clon</string>
+    <string name="type_demon">Demonio</string>
+    <string name="type_disease">Enfermedad</string>
+    <string name="type_game">Juego</string>
+    <string name="type_genetic_experiment">Experimento genético</string>
+    <string name="type_hivemind">Mente colmena</string>
+    <string name="type_lizard_person">Persona-Lagarto</string>
+    <string name="type_microverse_inhabitant">Habitante de microverso</string>
+    <string name="type_mythological_creature">Criatura mitológica</string>
+    <string name="type_parasite">Parásito</string>
+    <string name="type_robot">Robot</string>
+    <string name="type_self_aware_arm">Brazo autoconsciente</string>
+    <string name="type_sentient_arm">Brazo consciente</string>
+    <string name="type_spacecraft">Nave espacial</string>
 
     <string name="error_network">Sin conexión a internet. Verifica tu red.</string>
     <string name="error_not_found">No se encontraron personajes con esos criterios.</string>

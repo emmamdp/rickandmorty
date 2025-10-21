@@ -2,9 +2,11 @@ package com.emdp.rickandmorty.features.advancedsearch.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
+import com.emdp.rickandmorty.domain.models.RickAndMortyPagedData
 import com.emdp.rickandmorty.domain.usecase.characterslist.GetCharactersUseCase
 import com.emdp.rickandmorty.features.advancedsearch.common.ErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,10 +31,7 @@ class RickAndMortyAdvancedSearchViewModel(
 
     fun updateName(name: String) {
         _filters.update { it.copy(name = name.ifBlank { null }) }
-
-        if (name.isBlank() && !hasActiveFilters(_filters.value)) {
-            resetSearch()
-        }
+        if (name.isBlank() && !hasAnyFilter()) resetSearch()
     }
 
     fun updateStatus(status: String?) {
@@ -64,7 +63,6 @@ class RickAndMortyAdvancedSearchViewModel(
             resetSearch()
             return
         }
-
         resetSearch()
         performSearch()
     }
@@ -73,7 +71,8 @@ class RickAndMortyAdvancedSearchViewModel(
         val currentState = _uiState.value
         if (!hasMorePages ||
             currentState !is AdvancedSearchUiState.Success ||
-            currentState.isLoadingMore) return
+            currentState.isLoadingMore
+        ) return
 
         _uiState.value = currentState.copy(isLoadingMore = true)
         performSearch(append = true)
@@ -81,47 +80,60 @@ class RickAndMortyAdvancedSearchViewModel(
 
     private fun performSearch(append: Boolean = false) {
         viewModelScope.launch {
-            if (!append) {
-                _uiState.value = AdvancedSearchUiState.Loading
-            }
+            if (!append) _uiState.value = AdvancedSearchUiState.Loading
 
             val pageToLoad = if (append) currentPage + 1 else currentPage
-
-            when (val result = getCharactersUseCase(page = pageToLoad, filter = _filters.value)) {
-                is DataResult.Success -> {
-                    val pagedData = result.data
-                    hasMorePages = pagedData.hasMore
-                    currentPage = pagedData.page
-
-                    if (append) {
-                        allCharacters.addAll(pagedData.data)
-                    } else {
-                        allCharacters.clear()
-                        allCharacters.addAll(pagedData.data)
-                    }
-
-                    _uiState.value = AdvancedSearchUiState.Success(
-                        characters = allCharacters.toList(),
-                        hasMorePages = hasMorePages,
-                        isLoadingMore = false
-                    )
-                }
-
-                is DataResult.Error -> {
-                    _uiState.value = if (append && allCharacters.isNotEmpty()) {
-                        AdvancedSearchUiState.Success(
-                            characters = allCharacters.toList(),
-                            hasMorePages = false,
-                            isLoadingMore = false
-                        )
-                    } else {
-                        AdvancedSearchUiState.Error(
-                            messageRes = ErrorMapper.mapToUserMessage(result.error)
-                        )
-                    }
-                }
+            val result = getCharactersUseCase(page = pageToLoad, filter = _filters.value)
+            when (result) {
+                is DataResult.Success -> handleSuccess(pagedData = result.data, append)
+                is DataResult.Error -> handleError(error = result.error, append)
             }
         }
+    }
+
+    private fun handleSuccess(
+        pagedData: RickAndMortyPagedData<CharacterModel>,
+        append: Boolean
+    ) {
+        hasMorePages = pagedData.hasMore
+        currentPage = pagedData.page
+
+        if (!append) allCharacters.clear()
+        allCharacters.addAll(pagedData.data)
+        _uiState.value =
+            getSuccessUiState(charactersList = allCharacters.toList(), hasMorePages = hasMorePages)
+    }
+
+    private fun handleError(error: AppError, append: Boolean) =
+        when {
+            error.is404() -> handleNoResults()
+            append && allCharacters.isNotEmpty() -> handleLoadMoreError()
+            else -> handleSearchError(error)
+        }
+
+    private fun handleNoResults() {
+        allCharacters.clear()
+        hasMorePages = false
+        _uiState.value = getSuccessUiState(charactersList = emptyList())
+    }
+
+    private fun handleLoadMoreError() {
+        _uiState.value = getSuccessUiState(charactersList = allCharacters.toList())
+    }
+
+    private fun getSuccessUiState(
+        charactersList: List<CharacterModel>,
+        hasMorePages: Boolean = false
+    ) = AdvancedSearchUiState.Success(
+        characters = charactersList,
+        hasMorePages = hasMorePages,
+        isLoadingMore = false
+    )
+
+    private fun handleSearchError(error: AppError) {
+        _uiState.value = AdvancedSearchUiState.Error(
+            messageRes = ErrorMapper.mapToUserMessage(error)
+        )
     }
 
     private fun resetSearch() {
@@ -131,19 +143,11 @@ class RickAndMortyAdvancedSearchViewModel(
         _uiState.value = AdvancedSearchUiState.Idle
     }
 
-    private fun hasActiveFilters(filters: CharactersFilterModel): Boolean {
-        return filters.status != null ||
-                filters.species != null ||
-                filters.gender != null ||
-                filters.type != null
-    }
+    private fun hasAnyFilter(): Boolean =
+        with(_filters.value) {
+            name != null || status != null || species != null || gender != null || type != null
+        }
 
-    private fun hasAnyFilter(): Boolean {
-        val current = _filters.value
-        return current.name != null ||
-                current.status != null ||
-                current.species != null ||
-                current.gender != null ||
-                current.type != null
-    }
+    private fun AppError.is404(): Boolean =
+        this is AppError.Http && this.code == 404
 }

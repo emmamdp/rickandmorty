@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.emdp.rickandmorty.core.ui.text.AppTextStyles
 import com.emdp.rickandmorty.core.ui.theme.PortalGreen
 import com.emdp.rickandmorty.core.ui.theme.RickCyan
 
@@ -16,17 +17,25 @@ fun RickAndMortyFilterChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showGradientBorder: Boolean = false
 ) {
     Surface(
         onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = if (selected) PortalGreen else MaterialTheme.colorScheme.surface,
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (selected) RickCyan else MaterialTheme.colorScheme.outline
-        )
+        color = if (selected) PortalGreen else MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+        border = if (selected && showGradientBorder) {
+            BorderStroke(
+                width = 2.dp,
+                brush = AppTextStyles.multiverseTitle()
+            )
+        } else {
+            BorderStroke(
+                width = 1.dp,
+                color = if (selected) RickCyan else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            )
+        }
     ) {
         Text(
             text = label,
