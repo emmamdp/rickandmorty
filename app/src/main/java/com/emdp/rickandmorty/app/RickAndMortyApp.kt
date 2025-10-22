@@ -3,6 +3,7 @@ package com.emdp.rickandmorty.app
 import android.app.Application
 import com.emdp.rickandmorty.BuildConfig
 import com.emdp.rickandmorty.core.di.RickAndMortyDiModules
+import com.emdp.rickandmorty.navigation.di.navigationModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -14,7 +15,9 @@ class RickAndMortyApp : Application() {
         startKoin {
             if (BuildConfig.DEBUG) androidLogger(Level.INFO)
             androidContext(this@RickAndMortyApp)
-            modules(RickAndMortyDiModules.allModules())
+            modules(
+                RickAndMortyDiModules.allModules() + navigationModule
+            )
         }
     }
 }

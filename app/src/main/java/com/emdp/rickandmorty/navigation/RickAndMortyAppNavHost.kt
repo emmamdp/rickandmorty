@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.emdp.rickandmorty.core.navigation.CharacterNavigator
 import com.emdp.rickandmorty.core.navigation.RickAndMortyNavRoutes
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.features.advancedsearch.navigation.rickAndMortyAdvancedSearchScreen
@@ -20,10 +21,13 @@ import com.emdp.rickandmorty.features.characterslist.navigation.rickAndMortyChar
 import com.emdp.rickandmorty.features.home.navigation.rickAndMortyHomeScreen
 import com.emdp.rickandmorty.features.splash.navigation.rickAndMortySplashScreen
 import com.emdp.rickandmorty.navigation.bottombar.RickAndMortyBottomBar
+import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun RickAndMortyAppNavHost() {
     val rootNavController = rememberNavController()
+    val characterNavigator: CharacterNavigator = koinInject { parametersOf(rootNavController) }
 
     RickAndMortyGradientBackground {
         NavHost(
@@ -41,15 +45,7 @@ fun RickAndMortyAppNavHost() {
             )
 
             composable(RickAndMortyNavRoutes.TabsRoute) {
-                RickAndMortyTabsHostScreen(
-                    onNavigateToDetail = { characterId ->
-                        rootNavController.navigate(
-                            RickAndMortyNavRoutes.CharacterDetail.build(characterId)
-                        ) {
-                            launchSingleTop = true
-                        }
-                    }
-                )
+                RickAndMortyTabsHostScreen(characterNavigator = characterNavigator)
             }
 
             rickAndMortyCharacterDetailScreen(
@@ -61,7 +57,7 @@ fun RickAndMortyAppNavHost() {
 
 @Composable
 private fun RickAndMortyTabsHostScreen(
-    onNavigateToDetail: (Int) -> Unit
+    characterNavigator: CharacterNavigator
 ) {
     val tabsNavController = rememberNavController()
     val backStack by tabsNavController.currentBackStackEntryAsState()
@@ -70,16 +66,12 @@ private fun RickAndMortyTabsHostScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = WindowInsets(left = 0, top = 0, right = 0, bottom = 0),
         bottomBar = {
             RickAndMortyBottomBar(
                 currentRoute = currentRoute,
                 onNavigate = { route ->
-                    tabsNavController.navigate(route) {
-                        popUpTo(RickAndMortyNavRoutes.HomeRoute) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    tabsNavController.navigateToTab(route)
                 }
             )
         }
@@ -91,27 +83,19 @@ private fun RickAndMortyTabsHostScreen(
         ) {
             rickAndMortyHomeScreen(
                 onNavigateToCharacters = {
-                    tabsNavController.navigate(RickAndMortyNavRoutes.CharactersListRoute) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(RickAndMortyNavRoutes.HomeRoute) { saveState = true }
-                    }
+                    tabsNavController.navigateToTab(RickAndMortyNavRoutes.CharactersListRoute)
                 },
                 onNavigateToSearch = {
-                    tabsNavController.navigate(RickAndMortyNavRoutes.AdvancedSearchRoute) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(RickAndMortyNavRoutes.HomeRoute) { saveState = true }
-                    }
+                    tabsNavController.navigateToTab(RickAndMortyNavRoutes.AdvancedSearchRoute)
                 }
             )
 
             rickAndMortyCharactersListScreen(
-                onCharacterClick = { id -> onNavigateToDetail(id) }
+                onCharacterClick = characterNavigator::navigateToDetail
             )
 
             rickAndMortyAdvancedSearchScreen(
-                onCharacterClick = { id -> onNavigateToDetail(id) }
+                onCharacterClick = characterNavigator::navigateToDetail
             )
         }
     }
