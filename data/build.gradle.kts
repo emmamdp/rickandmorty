@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.emdp.rickandmorty.data"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 26
@@ -16,20 +15,18 @@ android {
     buildFeatures { buildConfig = true }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     kotlin {
-        jvmToolchain(17)
+        jvmToolchain(21)
     }
 
     testOptions {
         unitTests { isReturnDefaultValues = true }
         unitTests.all { it.useJUnitPlatform() }
     }
-
-    sourceSets["androidTest"].assets.srcDir("$projectDir/schemas")
 }
 
 ksp {
