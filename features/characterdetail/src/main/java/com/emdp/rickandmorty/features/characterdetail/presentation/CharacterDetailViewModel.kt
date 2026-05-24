@@ -36,12 +36,18 @@ class CharacterDetailViewModel(
 
         viewModelScope.launch {
             val params = GetCharacterUseCase.Params(characterId)
-            when (val result = getCharacterUseCase(params)) {
-                is DataResult.Success -> {
-                    val uiModel = mapper.getUiModel(result.data)
-                    _uiState.value = Content(uiModel = uiModel)
+            getCharacterUseCase(params).collect { result ->
+                when (result) {
+                    is DataResult.Success -> {
+                        val uiModel = mapper.getUiModel(result.data)
+                        _uiState.value = Content(uiModel = uiModel)
+                    }
+                    is DataResult.Error -> {
+                        if (_uiState.value !is Content) {
+                            _uiState.value = Error
+                        }
+                    }
                 }
-                is DataResult.Error -> _uiState.value = Error
             }
         }
     }

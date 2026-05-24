@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CharactersDao {
@@ -30,6 +31,9 @@ interface CharactersDao {
 
     @Query("SELECT * FROM characters WHERE id = :id LIMIT 1")
     suspend fun getCharacterById(id: Int): CharacterEntity?
+
+    @Query("SELECT * FROM characters WHERE id = :id")
+    fun observeCharacterById(id: Int): Flow<CharacterEntity?>
 
     @Query("SELECT COUNT(*) FROM characters")
     suspend fun countCharacters(): Int

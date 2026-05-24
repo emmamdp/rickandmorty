@@ -1,7 +1,10 @@
 package com.emdp.rickandmorty.data.source.remote
 
 import com.emdp.rickandmorty.core.common.result.DataResult
+import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersPageModel
+
+import kotlinx.coroutines.flow.Flow
 
 interface CharactersRemoteSource {
 
@@ -13,4 +16,6 @@ interface CharactersRemoteSource {
         type: String? = null,
         gender: String? = null
     ): DataResult<CharactersPageModel>
+
+    fun getCharacterById(id: Int): Flow<DataResult<CharacterModel>>
 }

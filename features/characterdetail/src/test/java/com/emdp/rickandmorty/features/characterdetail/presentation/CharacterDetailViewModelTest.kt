@@ -10,6 +10,7 @@ import com.emdp.rickandmorty.features.characterdetail.presentation.mapper.Charac
 import com.emdp.rickandmorty.features.characterdetail.presentation.uimodel.CharacterDetailUiModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -72,7 +73,7 @@ internal class CharacterDetailViewModelTest {
             val domainModel: CharacterModel = mock()
             val uiModel: CharacterDetailUiModel = mock()
 
-            whenever(useCase(params)).thenReturn(DataResult.Success(domainModel))
+            whenever(useCase(params)).thenReturn(flowOf(DataResult.Success(domainModel)))
             whenever(mapper.getUiModel(domainModel)).thenReturn(uiModel)
 
             viewModel.load(id)
@@ -90,7 +91,7 @@ internal class CharacterDetailViewModelTest {
     fun `load error emits Error and does not map`() = runTest(testDispatcher) {
         val id = 2
         val params = GetCharacterUseCase.Params(id)
-        whenever(useCase(params)).thenReturn(DataResult.Error(AppError.DataNotFound))
+        whenever(useCase(params)).thenReturn(flowOf(DataResult.Error(AppError.DataNotFound)))
 
         viewModel.load(id)
         advanceUntilIdle()
@@ -109,8 +110,8 @@ internal class CharacterDetailViewModelTest {
             val uiModel: CharacterDetailUiModel = mock()
 
             whenever(useCase(params))
-                .thenReturn(DataResult.Error(AppError.DataNotFound))
-                .thenReturn(DataResult.Success(domainModel))
+                .thenReturn(flowOf(DataResult.Error(AppError.DataNotFound)))
+                .thenReturn(flowOf(DataResult.Success(domainModel)))
             whenever(mapper.getUiModel(domainModel)).thenReturn(uiModel)
 
             viewModel.load(id)
@@ -135,7 +136,7 @@ internal class CharacterDetailViewModelTest {
             val domainModel: CharacterModel = mock()
             val uiModel: CharacterDetailUiModel = mock()
 
-            whenever(useCase(params)).thenReturn(DataResult.Success(domainModel))
+            whenever(useCase(params)).thenReturn(flowOf(DataResult.Success(domainModel)))
             whenever(mapper.getUiModel(domainModel)).thenReturn(uiModel)
 
             viewModel.load(id)
@@ -150,5 +151,29 @@ internal class CharacterDetailViewModelTest {
             verifyNoInteractions(useCase)
             verifyNoInteractions(mapper)
             assertTrue(viewModel.uiState.value is Content)
+        }
+
+    @Test
+    fun `error after success does not override Content state`() =
+        runTest(testDispatcher) {
+            val id = 5
+            val params = GetCharacterUseCase.Params(id)
+            val domainModel: CharacterModel = mock()
+            val uiModel: CharacterDetailUiModel = mock()
+
+            whenever(useCase(params)).thenReturn(
+                flowOf(
+                    DataResult.Success(domainModel),
+                    DataResult.Error(AppError.Network(Exception()))
+                )
+            )
+            whenever(mapper.getUiModel(domainModel)).thenReturn(uiModel)
+
+            viewModel.load(id)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue(state is Content)
+            assertSame(uiModel, (state as Content).uiModel)
         }
 }

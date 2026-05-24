@@ -3,6 +3,10 @@ package com.emdp.rickandmorty.data.source.local.dao
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -10,6 +14,7 @@ internal class FakeCharactersDao : CharactersDao {
 
     private val mutex = Mutex()
     private val charactersMap = linkedMapOf<Int, CharacterEntity>()
+    private val charactersFlow = MutableStateFlow<Map<Int, CharacterEntity>>(emptyMap())
 
     override fun pagingSource(
         name: String?,
@@ -36,13 +41,22 @@ internal class FakeCharactersDao : CharactersDao {
     override suspend fun getCharacterById(id: Int): CharacterEntity? =
         mutex.withLock { charactersMap[id] }
 
+    override fun observeCharacterById(id: Int): Flow<CharacterEntity?> =
+        charactersFlow.map { it[id] }
+
     override suspend fun countCharacters(): Int = mutex.withLock { charactersMap.size }
 
     override suspend fun upsertAll(characters: List<CharacterEntity>) {
-        mutex.withLock { characters.forEach { charactersMap[it.id] = it } }
+        mutex.withLock {
+            characters.forEach { charactersMap[it.id] = it }
+            charactersFlow.update { charactersMap.toMap() }
+        }
     }
 
-    override suspend fun clearAll() = mutex.withLock { charactersMap.clear() }
+    override suspend fun clearAll() = mutex.withLock {
+        charactersMap.clear()
+        charactersFlow.update { emptyMap() }
+    }
 
     private fun filteredSorted(
         name: String?,

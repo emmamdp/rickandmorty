@@ -1,8 +1,9 @@
 package com.emdp.rickandmorty.data.source.local
 
-import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.domain.models.CharacterModel
+import kotlinx.coroutines.flow.Flow
 
 interface CharacterLocalSource {
-    suspend fun getCharacterById(id: Int): DataResult<CharacterModel>
+    fun getCharacterById(id: Int): Flow<CharacterModel?>
+    suspend fun saveCharacter(character: CharacterModel)
 }

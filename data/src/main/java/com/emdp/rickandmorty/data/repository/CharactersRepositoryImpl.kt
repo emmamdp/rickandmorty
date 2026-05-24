@@ -17,6 +17,11 @@ import com.emdp.rickandmorty.domain.models.CharactersFilterModel
 import com.emdp.rickandmorty.domain.models.CharactersPageModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalPagingApi::class)
@@ -76,6 +81,24 @@ class CharactersRepositoryImpl(
         gender = filters.gender
     )
 
-    override suspend fun getCharacterById(id: Int): DataResult<CharacterModel> =
-        localSource.getCharacterById(id)
+    override fun getCharacterById(id: Int): Flow<DataResult<CharacterModel>> = flow {
+        val initialLocalData = localSource.getCharacterById(id).first()
+        if (initialLocalData != null) {
+            emit(DataResult.Success(initialLocalData))
+        }
+
+        remoteSource.getCharacterById(id).collect { remoteResult ->
+            if (remoteResult is DataResult.Success) {
+                localSource.saveCharacter(remoteResult.data)
+            } else if (initialLocalData == null) {
+                emit(remoteResult)
+            }
+        }
+
+        emitAll(
+            localSource.getCharacterById(id)
+                .filterNotNull()
+                .map { DataResult.Success(it) }
+        )
+    }.distinctUntilChanged()
 }

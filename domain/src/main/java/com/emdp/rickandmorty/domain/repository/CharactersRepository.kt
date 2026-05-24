@@ -18,5 +18,5 @@ interface CharactersRepository {
         filters: CharactersFilterModel
     ): DataResult<CharactersPageModel>
 
-    suspend fun getCharacterById(id: Int): DataResult<CharacterModel>
+    fun getCharacterById(id: Int): Flow<DataResult<CharacterModel>>
 }

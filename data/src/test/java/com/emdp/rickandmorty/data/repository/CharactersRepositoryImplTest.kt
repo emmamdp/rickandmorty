@@ -1,5 +1,6 @@
 package com.emdp.rickandmorty.data.repository
 
+import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
 import com.emdp.rickandmorty.data.source.local.RickAndMortyDatabase
@@ -10,6 +11,7 @@ import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -79,15 +81,31 @@ internal class CharactersRepositoryImplTest {
     @Test
     fun `getCharacterById returns Success and delegates to localSource`() = runTest {
         val expectedModel = CharacterModelMother.mockRick()
-        val expected = DataResult.Success(expectedModel)
 
-        whenever(localSource.getCharacterById(1)).thenReturn(expected)
+        whenever(localSource.getCharacterById(1)).thenReturn(flowOf(expectedModel))
+        whenever(remoteSource.getCharacterById(1)).thenReturn(flowOf(DataResult.Error(AppError.DataNotFound)))
 
-        val result = repository.getCharacterById(1)
+        val result = repository.getCharacterById(1).first()
 
         assertTrue(result is DataResult.Success)
         assertEquals(expectedModel, (result as DataResult.Success).data)
         verify(localSource, times(1)).getCharacterById(1)
+    }
+
+    @Test
+    fun `getCharacterById returns Success from remote when local fails`() = runTest {
+        val expectedModel = CharacterModelMother.mockRick()
+        val expected = DataResult.Success(expectedModel)
+
+        whenever(localSource.getCharacterById(1)).thenReturn(flowOf(null, expectedModel))
+        whenever(remoteSource.getCharacterById(1)).thenReturn(flowOf(expected))
+
+        val result = repository.getCharacterById(1).first()
+
+        assertTrue(result is DataResult.Success)
+        assertEquals(expectedModel, (result as DataResult.Success).data)
+        verify(remoteSource).getCharacterById(1)
+        verify(localSource).saveCharacter(expectedModel)
     }
 
     @Test

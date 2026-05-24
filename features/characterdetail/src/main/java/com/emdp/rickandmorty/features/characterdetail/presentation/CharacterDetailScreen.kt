@@ -1,6 +1,7 @@
 package com.emdp.rickandmorty.features.characterdetail.presentation
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,16 +41,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.core.ui.loader.MultiverseLoader
 import com.emdp.rickandmorty.core.ui.text.AppTextStyles
+import com.emdp.rickandmorty.core.ui.theme.PortalGreen
+import com.emdp.rickandmorty.core.ui.theme.RickCyan
 import com.emdp.rickandmorty.core.ui.topbar.RickAndMortyTopBar
 import com.emdp.rickandmorty.features.characterdetail.R
 import com.emdp.rickandmorty.features.characterdetail.presentation.uimodel.CharacterDetailUiModel
@@ -188,6 +194,10 @@ private fun CharacterHeaderImage(
     modifier: Modifier = Modifier,
     ratio: Float = 1.2f
 ) {
+    val portalBrush = Brush.sweepGradient(
+        colors = listOf(PortalGreen, RickCyan, PortalGreen)
+    )
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -207,11 +217,38 @@ private fun CharacterHeaderImage(
                 )
             }
     ) {
-        AsyncImage(
-            model = imageUrl,
+        val context = LocalContext.current
+        val imageRequest = remember(imageUrl) {
+            ImageRequest.Builder(context)
+                .data(imageUrl)
+                .crossfade(true)
+                .memoryCacheKey(imageUrl)
+                .diskCacheKey(imageUrl)
+                .build()
+        }
+
+        SubcomposeAsyncImage(
+            model = imageRequest,
             contentDescription = contentDescription,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            loading = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(portalBrush),
+                    contentAlignment = Alignment.Center
+                ) {
+                    MultiverseLoader(showMessage = false)
+                }
+            },
+            error = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(portalBrush)
+                )
+            }
         )
     }
 }

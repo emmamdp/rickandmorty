@@ -3,14 +3,20 @@ package com.emdp.rickandmorty.data.source.remote
 import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.remote.api.CharactersApi
+import com.emdp.rickandmorty.data.source.remote.dto.CharacterDto
+import com.emdp.rickandmorty.data.source.remote.dto.CharacterDtoMother
+import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDto
 import com.emdp.rickandmorty.data.source.remote.dto.CharactersResponseDtoMother
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
+import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyString
@@ -18,6 +24,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.whenever
 import retrofit2.HttpException
@@ -30,6 +37,11 @@ internal class CharactersRemoteSourceImplTest {
     private val mapper: CharactersRemoteMapper = mock()
 
     private val source: CharactersRemoteSource = CharactersRemoteSourceImpl(api, mapper)
+
+    @BeforeEach
+    fun setUp() {
+        whenever(mapper.toError(any())).thenReturn(AppError.Unexpected(Exception("Mocked error")))
+    }
 
     @Test
     fun `getCharacters returns Success and maps list`() = runTest {
@@ -46,7 +58,7 @@ internal class CharactersRemoteSourceImplTest {
                 gender = GENDER_MALE
             )
         ).thenReturn(response)
-        whenever(mapper.toModel(response)).thenReturn(model)
+        whenever(mapper.toModel(any<CharactersResponseDto>())).thenReturn(model)
 
         val result = source.getCharacters(
             page = PAGE_1,
@@ -67,7 +79,7 @@ internal class CharactersRemoteSourceImplTest {
             null,
             GENDER_MALE
         )
-        verify(mapper, times(1)).toModel(response)
+        verify(mapper, times(1)).toModel(any<CharactersResponseDto>())
     }
 
     @Test
@@ -103,7 +115,7 @@ internal class CharactersRemoteSourceImplTest {
                 type = Mockito.isNull(),
                 gender = anyString()
             )
-        ).thenThrow(http)
+        ).thenAnswer { throw http }
         whenever(mapper.toError(http)).thenReturn(expected)
 
         val result = source.getCharacters(
@@ -115,6 +127,40 @@ internal class CharactersRemoteSourceImplTest {
         assertTrue(err is AppError.Http)
         assertEquals(404, (err as AppError.Http).code)
         verify(mapper, times(1)).toError(http)
+    }
+
+    @Test
+    fun `getCharacterById returns Success and maps character`() = runTest {
+        val response = CharacterDtoMother.mockRick()
+        val model = CharacterModelMother.mockRick()
+        val id = response.id
+
+        whenever(api.getCharacterById(id)).thenReturn(response)
+        whenever(mapper.toModel(any<CharacterDto>())).thenReturn(model)
+
+        val result = source.getCharacterById(id).first()
+
+        assertTrue(result is DataResult.Success)
+        assertEquals(model, (result as DataResult.Success).data)
+        verify(api).getCharacterById(id)
+        verify(mapper).toModel(any<CharacterDto>())
+    }
+
+    @Test
+    fun `getCharacterById returns Error using mapper toError on Exception`() = runTest {
+        val io = IOException("network fail")
+        val expected = AppError.Network(io)
+        val id = 1
+
+        whenever(api.getCharacterById(id)).thenAnswer { throw io }
+        whenever(mapper.toError(io)).thenReturn(expected)
+
+        val result = source.getCharacterById(id).first()
+
+        assertTrue(result is DataResult.Error)
+        assertEquals(expected, (result as DataResult.Error).error)
+        verify(api).getCharacterById(id)
+        verify(mapper).toError(io)
     }
 
     companion object {

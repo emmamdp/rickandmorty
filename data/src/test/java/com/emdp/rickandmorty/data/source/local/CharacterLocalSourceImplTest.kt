@@ -1,23 +1,22 @@
 package com.emdp.rickandmorty.data.source.local
 
-import com.emdp.rickandmorty.core.common.result.AppError
-import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
 import com.emdp.rickandmorty.data.source.local.entity.CharacterEntityMother
 import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class CharactersLocalSourceImplTest {
+internal class CharacterLocalSourceImplTest {
 
     private val charactersDao: CharactersDao = mock()
     private val localMapper: CharacterLocalMapper = mock()
@@ -25,43 +24,40 @@ internal class CharactersLocalSourceImplTest {
     private val localSource = CharacterLocalSourceImpl(charactersDao, localMapper)
 
     @Test
-    fun `getCharacterById returns Success when entity exists`() = runTest {
+    fun `getCharacterById emits model when entity exists`() = runTest {
         val entity = CharacterEntityMother.mockRick()
         val model = CharacterModelMother.mockRick()
         val characterId = entity.id
 
-        whenever(charactersDao.getCharacterById(characterId)).thenReturn(entity)
+        whenever(charactersDao.observeCharacterById(characterId)).thenReturn(flowOf(entity))
         whenever(localMapper.toModel(entity)).thenReturn(model)
 
-        val result = localSource.getCharacterById(characterId)
+        val result = localSource.getCharacterById(characterId).first()
 
-        assertTrue(result is DataResult.Success)
-        assertSame(model, (result as DataResult.Success).data)
+        assertSame(model, result)
+        verify(charactersDao).observeCharacterById(characterId)
     }
 
     @Test
-    fun `getCharacterById returns DataNotFound when entity is null`() = runTest {
+    fun `getCharacterById emits null when entity does not exist`() = runTest {
         val characterId = 42
-        whenever(charactersDao.getCharacterById(characterId)).thenReturn(null)
+        whenever(charactersDao.observeCharacterById(characterId)).thenReturn(flowOf(null))
 
-        val result = localSource.getCharacterById(characterId)
+        val result = localSource.getCharacterById(characterId).first()
 
-        assertTrue(result is DataResult.Error)
-        val error = (result as DataResult.Error).error
-        assertEquals(AppError.DataNotFound, error)
+        assertNull(result)
     }
 
     @Test
-    fun `getCharacterById returns Unknown when dao throws`() = runTest {
-        val characterId = 99
-        val boom = RuntimeException("db failure")
-        whenever(charactersDao.getCharacterById(characterId)).thenThrow(boom)
+    fun `saveCharacter calls dao upsertAll with mapped entity`() = runTest {
+        val model = CharacterModelMother.mockRick()
+        val entity = CharacterEntityMother.mockRick()
+        
+        whenever(localMapper.toEntity(model)).thenReturn(entity)
 
-        val result = localSource.getCharacterById(characterId)
+        localSource.saveCharacter(model)
 
-        assertTrue(result is DataResult.Error)
-        val error = (result as DataResult.Error).error
-        assertInstanceOf(AppError.Unexpected::class.java, error)
-        assertEquals("db failure", (error as AppError.Unexpected).cause?.message)
+        verify(localMapper).toEntity(model)
+        verify(charactersDao).upsertAll(listOf(entity))
     }
 }
