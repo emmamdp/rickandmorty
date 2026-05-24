@@ -11,12 +11,4 @@ internal object CharactersPageModelMother {
     )
 
     fun mock() = default
-
-    fun mockEmpty() = default.copy(
-        count = 0,
-        pages = 0,
-        nextPage = null,
-        prevPage = null,
-        results = emptyList()
-    )
 }

@@ -19,7 +19,7 @@ internal class CharactersApiTest {
         val get = method?.getAnnotation(GET::class.java)
 
         assertNotNull(get)
-        assertEquals("character", get?.value)
+        assertEquals("character/", get?.value)
 
         val params = method?.parameters
         val queryNames = params?.mapNotNull { p ->

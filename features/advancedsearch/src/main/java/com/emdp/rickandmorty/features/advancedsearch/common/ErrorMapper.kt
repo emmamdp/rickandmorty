@@ -15,7 +15,8 @@ object ErrorMapper {
                 else -> R.string.error_unknown
             }
 
-            AppError.DataNotFound -> R.string.error_not_found
+            AppError.DataNotFound,
+            AppError.NoResultsFound -> R.string.error_not_found
 
             is AppError.Serialization,
             is AppError.Unexpected -> R.string.error_unknown

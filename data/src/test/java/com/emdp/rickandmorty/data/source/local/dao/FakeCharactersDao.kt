@@ -9,7 +9,7 @@ import kotlinx.coroutines.sync.withLock
 internal class FakeCharactersDao : CharactersDao {
 
     private val mutex = Mutex()
-    private val store = linkedMapOf<Int, CharacterEntity>()
+    private val charactersMap = linkedMapOf<Int, CharacterEntity>()
 
     override fun pagingSource(
         name: String?,
@@ -34,13 +34,15 @@ internal class FakeCharactersDao : CharactersDao {
     }
 
     override suspend fun getCharacterById(id: Int): CharacterEntity? =
-        mutex.withLock { store[id] }
+        mutex.withLock { charactersMap[id] }
+
+    override suspend fun countCharacters(): Int = mutex.withLock { charactersMap.size }
 
     override suspend fun upsertAll(characters: List<CharacterEntity>) {
-        mutex.withLock { characters.forEach { store[it.id] = it } }
+        mutex.withLock { characters.forEach { charactersMap[it.id] = it } }
     }
 
-    override suspend fun clearAll() = mutex.withLock { store.clear() }
+    override suspend fun clearAll() = mutex.withLock { charactersMap.clear() }
 
     private fun filteredSorted(
         name: String?,
@@ -67,7 +69,7 @@ internal class FakeCharactersDao : CharactersDao {
             return v.equals(filter, ignoreCase = true)
         }
 
-        return store.values.asSequence()
+        return charactersMap.values.asSequence()
             .filter { e -> like(e.name, fName) }
             .filter { e -> eq(e.status, fStatus) }
             .filter { e -> like(e.species, fSpecies) }

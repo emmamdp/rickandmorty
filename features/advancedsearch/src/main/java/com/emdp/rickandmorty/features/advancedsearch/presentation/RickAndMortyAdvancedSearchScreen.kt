@@ -242,6 +242,8 @@ private fun GetUiStateViewContent(
                     with(character) {
                         RickAndMortyCharacterCard(
                             characterName = name,
+                            status = status.name,
+                            species = species,
                             imageUrl = imageUrl,
                             onClick = { onCharacterClick(id) }
                         )

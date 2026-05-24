@@ -27,19 +27,6 @@ object RickAndMortyNetworkProvider {
             .connectTimeout(config.connectTimeoutMs, TimeUnit.MILLISECONDS)
             .readTimeout(config.readTimeoutMs, TimeUnit.MILLISECONDS)
             .writeTimeout(config.writeTimeoutMs, TimeUnit.MILLISECONDS)
-            .addInterceptor { chain ->
-                val original: Request = chain.request()
-                val req = original.newBuilder()
-                    .header("Accept", "application/json")
-                    .build()
-                chain.proceed(req)
-            }
-
-        if (includeErrorInterceptor) {
-            builder.addInterceptor(errorInterceptor)
-        }
-
-        extraInterceptors.forEach { builder.addInterceptor(it) }
 
         if (enableLogging) {
             val logging = HttpLoggingInterceptor().apply {
@@ -47,6 +34,21 @@ object RickAndMortyNetworkProvider {
             }
             builder.addInterceptor(logging)
         }
+
+        builder.addInterceptor { chain ->
+            val original: Request = chain.request()
+            val req = original.newBuilder()
+                .header(HEADER_ACCEPT, CONTENT_TYPE_JSON)
+                .header(HEADER_USER_AGENT, USER_AGENT_VALUE)
+                .build()
+            chain.proceed(req)
+        }
+
+        if (includeErrorInterceptor) {
+            builder.addInterceptor(errorInterceptor)
+        }
+
+        extraInterceptors.forEach { builder.addInterceptor(it) }
 
         return builder.build()
     }
@@ -62,6 +64,11 @@ object RickAndMortyNetworkProvider {
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
     }
+
+    private const val HEADER_ACCEPT = "Accept"
+    private const val HEADER_USER_AGENT = "User-Agent"
+    private const val CONTENT_TYPE_JSON = "application/json"
+    private const val USER_AGENT_VALUE = "Mozilla/5.0 (Linux; Android 13; RickAndMortyApp) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36"
 }
 
 inline fun <reified T> Retrofit.createService(): T = this.create(T::class.java)

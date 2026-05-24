@@ -24,6 +24,7 @@ android {
 dependencies {
     implementation(projects.domain)
     implementation(projects.data)
+    implementation(projects.core.ui)
     implementation(projects.features.home)
     implementation(projects.features.advancedsearch)
     implementation(projects.features.characterslist)

@@ -3,6 +3,7 @@ package com.emdp.rickandmorty.core.di
 import com.emdp.rickandmorty.data.di.rickAndMortyNetworkModule
 import com.emdp.rickandmorty.data.di.rickAndMortyRemoteModule
 import com.emdp.rickandmorty.data.di.rickAndMortyRoomModule
+import com.emdp.rickandmorty.core.ui.di.coreUiModule
 import com.emdp.rickandmorty.domain.di.rickAndMortyDomainModule
 import com.emdp.rickandmorty.features.advancedsearch.di.rickAndMortyAdvancedSearchModule
 import com.emdp.rickandmorty.features.characterdetail.di.characterDetailPresentationModule
@@ -15,6 +16,7 @@ object RickAndMortyDiModules {
         rickAndMortyNetworkModule,
         rickAndMortyRoomModule,
         rickAndMortyRemoteModule,
+        coreUiModule,
         rickAndMortyDomainModule,
         rickAndMortyHomeModule,
         rickAndMortyAdvancedSearchModule,

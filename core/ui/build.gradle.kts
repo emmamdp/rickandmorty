@@ -38,8 +38,15 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui.tooling.preview)
 
+    implementation(libs.koin.android)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    testImplementation(libs.junit.api)
+    testRuntimeOnly(libs.junit.engine)
+    testRuntimeOnly(libs.junit.launcher)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

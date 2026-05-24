@@ -2,14 +2,11 @@ package com.emdp.rickandmorty.data.di
 
 import com.emdp.rickandmorty.data.common.network.createService
 import com.emdp.rickandmorty.data.repository.CharactersRepositoryImpl
-import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
-import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSourceImpl
 import com.emdp.rickandmorty.data.source.remote.api.CharactersApi
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapper
 import com.emdp.rickandmorty.data.source.remote.mapper.CharactersRemoteMapperImpl
-import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.repository.CharactersRepository
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
@@ -24,8 +21,4 @@ val rickAndMortyRemoteModule = module {
 
     singleOf(::CharactersRemoteMapperImpl) { bind<CharactersRemoteMapper>() }
     singleOf(::CharactersRemoteSourceImpl) { bind<CharactersRemoteSource>() }
-
-    single<(List<CharacterModel>) -> List<CharacterEntity>> {
-        get<CharacterLocalMapper>()::toEntityList
-    }
 }

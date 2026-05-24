@@ -1,7 +1,7 @@
 package com.emdp.rickandmorty.data.source.local.mapper
 
-import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
-import com.emdp.rickandmorty.domain.models.CharacterModel
+import com.emdp.rickandmorty.data.source.local.entity.CharacterEntityMother
+import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.enums.CharacterGender
 import com.emdp.rickandmorty.domain.models.enums.CharacterStatus
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,19 +14,7 @@ internal class CharacterLocalMapperImplTest {
 
     @Test
     fun `toEntity maps non-blank fields and enums correctly`() {
-        val model = CharacterModel(
-            id = 1,
-            name = "Rick Sanchez",
-            status = CharacterStatus.ALIVE,
-            species = "Human",
-            type = "Scientist",
-            gender = CharacterGender.MALE,
-            originName = "Earth (C-137)",
-            locationName = "Citadel of Ricks",
-            imageUrl = "https://img/rick.png",
-            episodeUrls = listOf("e1", "e2"),
-            createdIso = "2017-11-04T18:50:21.651Z"
-        )
+        val model = CharacterModelMother.mockRickFull()
 
         val entity = sut.toEntity(model)
 
@@ -44,19 +32,7 @@ internal class CharacterLocalMapperImplTest {
 
     @Test
     fun `toEntity converts blank strings to null for optional DB fields`() {
-        val model = CharacterModel(
-            id = 2,
-            name = "Morty Smith",
-            status = CharacterStatus.UNKNOWN,
-            species = "Human",
-            type = "",
-            gender = CharacterGender.MALE,
-            originName = "",
-            locationName = " ",
-            imageUrl = "https://img/morty.png",
-            episodeUrls = emptyList(),
-            createdIso = ""
-        )
+        val model = CharacterModelMother.mockWithBlanks()
 
         val entity = sut.toEntity(model)
 
@@ -70,19 +46,7 @@ internal class CharacterLocalMapperImplTest {
 
     @Test
     fun `toModel maps strings to enums and nulls to empty strings`() {
-        val entity = CharacterEntity(
-            id = 3,
-            name = "Birdperson",
-            status = "DEAD",
-            species = "Bird-Person",
-            type = null,
-            gender = "MALE",
-            imageUrl = "https://img/birdperson.png",
-            originName = null,
-            locationName = null,
-            episodes = null,
-            created = null
-        )
+        val entity = CharacterEntityMother.mockBirdperson()
 
         val model = sut.toModel(entity)
 
@@ -101,19 +65,7 @@ internal class CharacterLocalMapperImplTest {
 
     @Test
     fun `toModel handles unknown enum strings as UNKNOWN`() {
-        val entity = CharacterEntity(
-            id = 4,
-            name = "Unknown Dude",
-            status = "SOMETHING_WEIRD",
-            species = "???",
-            type = "???",
-            gender = "NOT_A_GENDER",
-            imageUrl = "https://img/unknown.png",
-            originName = "Somewhere",
-            locationName = "Nowhere",
-            episodes = listOf("e1"),
-            created = "2020-01-01T00:00:00Z"
-        )
+        val entity = CharacterEntityMother.mockUnknown()
 
         val model = sut.toModel(entity)
 
@@ -123,23 +75,21 @@ internal class CharacterLocalMapperImplTest {
 
     @Test
     fun `toModel is case-insensitive for enums`() {
-        val entity = CharacterEntity(
-            id = 5,
-            name = "Case Test",
-            status = "alive",
-            species = "Human",
-            type = "",
-            gender = "male",
-            imageUrl = "https://img/case.png",
-            originName = "earth",
-            locationName = "somewhere",
-            episodes = listOf("e1", "e2"),
-            created = "date"
-        )
+        val entity = CharacterEntityMother.mockCaseSensitive()
 
         val model = sut.toModel(entity)
 
         assertEquals(CharacterStatus.ALIVE, model.status)
         assertEquals(CharacterGender.MALE, model.gender)
+    }
+
+    @Test
+    fun `toEntityList maps list of models correctly`() {
+        val models = CharacterModelMother.mockList()
+
+        val entities = sut.toEntityList(models)
+
+        assertEquals(models.size, entities.size)
+        assertEquals(models[0].id, entities[0].id)
     }
 }

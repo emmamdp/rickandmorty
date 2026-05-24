@@ -2,25 +2,23 @@ package com.emdp.rickandmorty.domain.models
 
 internal object CharactersFilterModelMother {
 
-    private val default = CharactersFilterModel(
+    fun mock() = CharactersFilterModel(
         name = "Rick",
-        status = "alive",
+        status = "Alive",
         species = "Human",
-        type = "",
-        gender = "male"
+        type = "Scientist",
+        gender = "Male"
     )
-
-    fun mock() = default
 
     fun mockEmpty() = CharactersFilterModel(
-        name = null,
-        status = null,
-        species = null,
-        type = null,
-        gender = null
+        name = "",
+        status = "",
+        species = "",
+        type = "",
+        gender = ""
     )
 
-    fun mockOnlyName(name: String = "Morty") = CharactersFilterModel(
+    fun mockOnlyName(name: String) = CharactersFilterModel(
         name = name,
         status = null,
         species = null,

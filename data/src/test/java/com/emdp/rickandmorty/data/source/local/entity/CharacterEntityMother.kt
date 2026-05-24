@@ -1,6 +1,5 @@
 package com.emdp.rickandmorty.data.source.local.entity
 
-
 internal object CharacterEntityMother {
 
     private val character = CharacterEntity(
@@ -21,6 +20,48 @@ internal object CharacterEntityMother {
     fun mockRickySanchez() = character
 
     fun mockRick() = character.copy(name = "Rick")
+
+    fun mockBirdperson() = character.copy(
+        id = 3,
+        name = "Birdperson",
+        status = "DEAD",
+        species = "Bird-Person",
+        type = null,
+        gender = "MALE",
+        imageUrl = "https://img/birdperson.png",
+        originName = null,
+        locationName = null,
+        episodes = null,
+        created = null
+    )
+
+    fun mockUnknown() = character.copy(
+        id = 4,
+        name = "Unknown Dude",
+        status = "SOMETHING_WEIRD",
+        species = "???",
+        type = "???",
+        gender = "NOT_A_GENDER",
+        imageUrl = "https://img/unknown.png",
+        originName = "Somewhere",
+        locationName = "Nowhere",
+        episodes = listOf("e1"),
+        created = "2020-01-01T00:00:00Z"
+    )
+
+    fun mockCaseSensitive() = character.copy(
+        id = 5,
+        name = "Case Test",
+        status = "alive",
+        species = "Human",
+        type = "",
+        gender = "male",
+        imageUrl = "https://img/case.png",
+        originName = "earth",
+        locationName = "somewhere",
+        episodes = listOf("e1", "e2"),
+        created = "date"
+    )
 
     fun mockList01() = listOf(
         mockRick(),

@@ -2,16 +2,15 @@ package com.emdp.rickandmorty.features.characterslist.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +29,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
+import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.ui.background.RickAndMortyGradientBackground
 import com.emdp.rickandmorty.core.ui.card.RickAndMortyCharacterCard
 import com.emdp.rickandmorty.core.ui.searchbar.RickAndMortySearchBar
@@ -42,6 +44,10 @@ import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharactersFilterModel
 import com.emdp.rickandmorty.features.characterslist.R
 import org.koin.androidx.compose.koinViewModel
+
+private const val CONTENT_TYPE_CHARACTER = "character"
+private const val KEY_LOADING_FOOTER = "loading_footer"
+private const val KEY_ERROR_FOOTER = "error_footer"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +100,7 @@ fun CharactersListScreen(
                     showGradientBorder = true
                 )
 
-                BoxWithConstraints(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .weight(1f)
@@ -102,11 +108,20 @@ fun CharactersListScreen(
                     val refresh = characters.loadState.refresh
                     val isEmpty = characters.itemCount == 0
 
+                    val isNoResultsError =
+                        refresh is LoadState.Error && refresh.error == AppError.NoResultsFound
+
                     when {
                         isEmpty && refresh is LoadState.Loading -> {
                             LoadingStateView(
                                 useMultiverseLoader = true,
                                 showMessage = false
+                            )
+                        }
+
+                        isEmpty && isNoResultsError -> {
+                            EmptyStateView(
+                                message = stringResource(R.string.characters_list_empty_placeholder)
                             )
                         }
 
@@ -128,9 +143,7 @@ fun CharactersListScreen(
                             CharactersGrid(
                                 items = characters,
                                 onCharacterClick = onCharacterClick,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(maxHeight)
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }
@@ -155,35 +168,37 @@ private fun CharactersGrid(
     ) {
         items(
             count = items.itemCount,
-            key = { index -> items[index]?.id ?: "placeholder_$index" },
-            contentType = { "character" }
+            key = items.itemKey { it.id },
+            contentType = items.itemContentType { CONTENT_TYPE_CHARACTER }
         ) { index ->
-            val character = items[index] ?: return@items
-            with(character) {
+            val character = items[index]
+            if (character != null) {
                 RickAndMortyCharacterCard(
-                    characterName = name,
-                    imageUrl = imageUrl,
-                    onClick = { onCharacterClick(id) }
+                    characterName = character.name,
+                    status = character.status.name,
+                    species = character.species,
+                    imageUrl = character.imageUrl,
+                    onClick = { onCharacterClick(character.id) }
                 )
             }
-
         }
 
         val appendState = items.loadState.append
         if (appendState is LoadState.Loading) {
             item(
-                key = "loading_footer",
-                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
+                key = KEY_LOADING_FOOTER,
+                span = { GridItemSpan(2) }
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(32.dp),
-                        strokeWidth = 3.dp
+                        strokeWidth = 3.dp,
+                        color = com.emdp.rickandmorty.core.ui.theme.PortalGreen
                     )
                 }
             }
@@ -191,8 +206,8 @@ private fun CharactersGrid(
 
         if (appendState is LoadState.Error) {
             item(
-                key = "error_footer",
-                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }
+                key = KEY_ERROR_FOOTER,
+                span = { GridItemSpan(2) }
             ) {
                 Box(
                     modifier = Modifier

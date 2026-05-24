@@ -20,11 +20,39 @@ internal object CharacterModelMother {
     )
 
     fun mockRick() = default
+    
+    fun mockRickFull() = default.copy(
+        id = 1,
+        name = "Rick Sanchez",
+        status = CharacterStatus.ALIVE,
+        species = "Human",
+        type = "Scientist",
+        gender = CharacterGender.MALE,
+        originName = "Earth (C-137)",
+        locationName = "Citadel of Ricks",
+        imageUrl = "https://img/rick.png",
+        episodeUrls = listOf("e1", "e2"),
+        createdIso = "2017-11-04T18:50:21.651Z"
+    )
+
+    fun mockWithBlanks() = default.copy(
+        id = 2,
+        name = "Morty Smith",
+        status = CharacterStatus.UNKNOWN,
+        species = "Human",
+        type = "",
+        gender = CharacterGender.MALE,
+        originName = "",
+        locationName = " ",
+        imageUrl = "https://img/morty.png",
+        episodeUrls = emptyList(),
+        createdIso = ""
+    )
 
     fun mockMorty() = default.copy(id = 2, name = "Morty")
 
     fun mockList() = listOf(
         default,
-        default.copy(id = 2, name = "Morty")
+        mockMorty()
     )
 }

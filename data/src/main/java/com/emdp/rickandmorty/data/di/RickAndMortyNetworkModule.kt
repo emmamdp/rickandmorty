@@ -1,5 +1,6 @@
 package com.emdp.rickandmorty.data.di
 
+import com.emdp.rickandmorty.data.BuildConfig
 import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkConfig
 import com.emdp.rickandmorty.data.common.network.RickAndMortyNetworkProvider
 import com.squareup.moshi.Moshi
@@ -14,7 +15,8 @@ val rickAndMortyNetworkModule = module {
         RickAndMortyNetworkProvider.provideOkHttp(
             config = get(),
             extraInterceptors = emptyList(),
-            includeErrorInterceptor = true
+            includeErrorInterceptor = true,
+            enableLogging = BuildConfig.DEBUG
         )
     }
     single<Retrofit> {

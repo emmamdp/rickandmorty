@@ -6,15 +6,15 @@ internal object CharactersFilterModelMother {
         name = "Rick",
         status = "Alive",
         species = "Human",
-        type = null,
+        type = "Scientist",
         gender = "Male"
     )
 
     fun mock() = default
 
-    fun mockNull() = CharactersFilterModel(
-        name = null,
-        status = null,
+    fun mockBlank() = default.copy(
+        name = " ",
+        status = "",
         species = null,
         type = null,
         gender = null

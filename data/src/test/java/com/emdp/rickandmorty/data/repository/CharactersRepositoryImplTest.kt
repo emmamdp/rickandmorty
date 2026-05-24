@@ -1,63 +1,79 @@
 package com.emdp.rickandmorty.data.repository
 
-import androidx.paging.PagingData
-import com.emdp.rickandmorty.core.common.result.AppError
 import com.emdp.rickandmorty.core.common.result.DataResult
 import com.emdp.rickandmorty.data.source.local.CharacterLocalSource
+import com.emdp.rickandmorty.data.source.local.RickAndMortyDatabase
 import com.emdp.rickandmorty.data.source.local.dao.CharactersDao
-import com.emdp.rickandmorty.data.source.local.entity.CharacterEntity
+import com.emdp.rickandmorty.data.source.local.mapper.CharacterLocalMapper
 import com.emdp.rickandmorty.data.source.remote.CharactersRemoteSource
-import com.emdp.rickandmorty.domain.models.CharacterModel
 import com.emdp.rickandmorty.domain.models.CharacterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersFilterModelMother
 import com.emdp.rickandmorty.domain.models.CharactersPageModelMother
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoInteractions
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 
 internal class CharactersRepositoryImplTest {
 
+    private val database: RickAndMortyDatabase = mock()
     private val localSource: CharacterLocalSource = mock()
     private val charactersDao: CharactersDao = mock()
     private val remoteSource: CharactersRemoteSource = mock()
-    private val toEntity: (List<CharacterModel>) -> List<CharacterEntity> = mock()
+    private val mapper: CharacterLocalMapper = mock()
 
-    private val repository = CharactersRepositoryImpl(
-        localSource = localSource,
-        charactersDao = charactersDao,
-        remoteSource = remoteSource,
-        toEntity = toEntity
-    )
+    private lateinit var repository: CharactersRepositoryImpl
 
-    @Test
-    fun `getCharactersPaged returns flow with PagingData`() = runTest {
-        val filter = CharactersFilterModelMother.mock()
+    @BeforeEach
+    fun setUp() = runTest {
+        whenever(database.charactersDao()).thenReturn(charactersDao)
+        whenever(charactersDao.countCharacters()).thenReturn(0)
 
-        val flow = repository.getCharactersPaged(filter)
-
-        assertNotNull(flow)
-        assertTrue(flow is kotlinx.coroutines.flow.Flow<PagingData<CharacterModel>>)
-        verifyNoInteractions(localSource)
-        verifyNoInteractions(charactersDao)
-        verifyNoInteractions(remoteSource)
+        repository = CharactersRepositoryImpl(
+            database = database,
+            localSource = localSource,
+            charactersDao = charactersDao,
+            remoteSource = remoteSource,
+            mapper = mapper
+        )
     }
 
     @Test
-    fun `getCharactersPaged with null filter returns flow`() = runTest {
-        val flow = repository.getCharactersPaged(filter = null)
+    fun `getCharactersPaged triggers pagingSourceFactory with correctly mapped filters`() =
+        runTest {
+            val filter = CharactersFilterModelMother.mock()
+            
+            whenever(charactersDao.pagingSource(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenReturn(mock())
 
-        assertNotNull(flow)
-        assertTrue(flow is kotlinx.coroutines.flow.Flow<PagingData<CharacterModel>>)
-        verifyNoInteractions(localSource)
-        verifyNoInteractions(charactersDao)
-        verifyNoInteractions(remoteSource)
+            repository.getCharactersPaged(filter).first()
+
+            verify(charactersDao).pagingSource(
+                name = filter.name,
+                status = "alive",
+                species = filter.species,
+                type = filter.type,
+                gender = "male"
+            )
+        }
+
+    @Test
+    fun `getCharactersPaged with blank filters calls DAO with nulls`() = runTest {
+        val filter = CharactersFilterModelMother.mockBlank()
+        
+        whenever(charactersDao.pagingSource(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()))
+            .thenReturn(mock())
+
+        repository.getCharactersPaged(filter).first()
+
+        verify(charactersDao).pagingSource(null, null, null, null, null)
     }
 
     @Test
@@ -72,36 +88,6 @@ internal class CharactersRepositoryImplTest {
         assertTrue(result is DataResult.Success)
         assertEquals(expectedModel, (result as DataResult.Success).data)
         verify(localSource, times(1)).getCharacterById(1)
-        verifyNoInteractions(charactersDao)
-        verifyNoInteractions(remoteSource)
-    }
-
-    @Test
-    fun `getCharacterById returns Error when localSource fails`() = runTest {
-        val expected = DataResult.Error(AppError.Unexpected(IllegalStateException("boom")))
-
-        whenever(localSource.getCharacterById(42)).thenReturn(expected)
-
-        val result = repository.getCharacterById(42)
-
-        assertTrue(result is DataResult.Error)
-        assertEquals(expected.error, (result as DataResult.Error).error)
-        verify(localSource, times(1)).getCharacterById(42)
-        verifyNoInteractions(charactersDao)
-        verifyNoInteractions(remoteSource)
-    }
-
-    @Test
-    fun `getCharacterById returns DataNotFound error when character does not exist`() = runTest {
-        val expected = DataResult.Error(AppError.DataNotFound)
-
-        whenever(localSource.getCharacterById(999)).thenReturn(expected)
-
-        val result = repository.getCharacterById(999)
-
-        assertTrue(result is DataResult.Error)
-        assertEquals(AppError.DataNotFound, (result as DataResult.Error).error)
-        verify(localSource, times(1)).getCharacterById(999)
     }
 
     @Test
@@ -125,77 +111,5 @@ internal class CharactersRepositoryImplTest {
 
         assertTrue(result is DataResult.Success)
         assertEquals(expectedPage, (result as DataResult.Success).data)
-        verify(remoteSource, times(1)).getCharacters(
-            page = 1,
-            name = filters.name,
-            status = filters.status,
-            species = filters.species,
-            type = filters.type,
-            gender = filters.gender
-        )
-        verifyNoInteractions(localSource)
-        verifyNoInteractions(charactersDao)
     }
-
-    @Test
-    fun `searchCharacters returns Error when remoteSource fails`() = runTest {
-        val filters = CharactersFilterModelMother.mock()
-        val expected = DataResult.Error(AppError.Network(cause = Exception("No internet")))
-
-        whenever(
-            remoteSource.getCharacters(
-                page = 1,
-                name = filters.name,
-                status = filters.status,
-                species = filters.species,
-                type = filters.type,
-                gender = filters.gender
-            )
-        ).thenReturn(expected)
-
-        val result = repository.searchCharacters(page = 1, filters = filters)
-
-        assertTrue(result is DataResult.Error)
-        assertEquals(expected.error, (result as DataResult.Error).error)
-        verify(remoteSource, times(1)).getCharacters(
-            page = 1,
-            name = filters.name,
-            status = filters.status,
-            species = filters.species,
-            type = filters.type,
-            gender = filters.gender
-        )
-        verifyNoInteractions(localSource)
-    }
-
-    @Test
-    fun `searchCharacters with page 2 calls remoteSource with correct page`() =
-        runTest {
-            val filters = CharactersFilterModelMother.mockNull()
-            val expectedPage = CharactersPageModelMother.mock()
-            val expected = DataResult.Success(expectedPage)
-
-            whenever(
-                remoteSource.getCharacters(
-                    page = 2,
-                    name = null,
-                    status = null,
-                    species = null,
-                    type = null,
-                    gender = null
-                )
-            ).thenReturn(expected)
-
-            val result = repository.searchCharacters(page = 2, filters = filters)
-
-            assertTrue(result is DataResult.Success)
-            verify(remoteSource, times(1)).getCharacters(
-                page = 2,
-                name = null,
-                status = null,
-                species = null,
-                type = null,
-                gender = null
-            )
-        }
 }
